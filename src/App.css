@@ -1,0 +1,101 @@
+.dashboard {
+  display: grid;
+  gap: 1rem;
+  padding: 1.5rem;
+  box-sizing: border-box;
+}
+
+.panel {
+  background: #fff;
+  border: 1px solid #d9dee8;
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+.header-panel h1 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.header-panel p {
+  margin: 0.5rem 0 0;
+  color: #4f5b6d;
+}
+
+.filter-panel h2,
+.panel h2 {
+  margin-top: 0;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.filters label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+}
+
+.filters select {
+  border: 1px solid #c6cedd;
+  border-radius: 0.5rem;
+  padding: 0.45rem;
+  background: #fff;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1rem;
+}
+
+.story-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.story-card {
+  border: 1px solid #e2e7f0;
+  border-radius: 0.6rem;
+  padding: 0.8rem;
+}
+
+.story-card h3 {
+  margin: 0.4rem 0;
+  font-size: 1rem;
+}
+
+.story-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+}
+
+.advice {
+  margin-bottom: 0;
+  color: #28344a;
+}
+
+.insight-panel {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.insight-panel ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.1rem;
+}
+
+@media (max-width: 900px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+}
