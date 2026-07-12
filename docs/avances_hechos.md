@@ -50,7 +50,16 @@ Conecta la aplicación al API de **Finnhub** para consumir feeds de noticias del
   - `related` (ticker string único) ➔ `assets` (array de tickers).
 - **Mecanismo de Resiliencia (Mock Fallback)**: Si no se encuentra una clave `VITE_FINNHUB_API_KEY` válida en `.env.local`, o si la petición falla debido a límites de la API, el servicio captura el error, emite un aviso en la consola de desarrollo, y retorna la lista de `INITIAL_NEWS` con un retraso asíncrono realista (800ms) para no romper la experiencia del usuario.
 
-### C. [`llmService.js`](file:///c:/Users/DIEGO/Documents/GitHub/agentic-scale/src/services/llmService.js)
+### C. [`alphaService.js`](file:///c:/Users/DIEGO/Documents/GitHub/agentic-scale/src/services/alphaService.js)
+Conecta la aplicación al API de **Alpha Vantage** para integrar una segunda fuente de noticias del mercado en paralelo:
+- **Endpoint Utilizado**: `https://www.alphavantage.co/query?function=NEWS_SENTIMENT`
+- **Mapeo de Datos y Sentimiento**:
+  - Parsea fechas nativas en formato `YYYYMMDDTHHMMSS` a ISO string de forma segura.
+  - Convierte la etiqueta de sentimiento general de la noticia (`overall_sentiment_label` ➔ `Positivo`/`Negativo`/`Neutral`) para servir como pre-clasificación inicial de impacto.
+  - Extrae y vincula hasta 3 tickers relevantes del arreglo `ticker_sentiment`.
+- **Mecanismo de Resiliencia**: Si no hay una clave `VITE_ALPHAVANTAGE_API_KEY` configurada, el servicio retorna de forma segura un arreglo vacío para que el dashboard continúe operando con las demás fuentes disponibles.
+
+### D. [`llmService.js`](file:///c:/Users/DIEGO/Documents/GitHub/agentic-scale/src/services/llmService.js)
 Conecta el panel al modelo de lenguaje **Gemini 2.5 Flash** para generar explicaciones, justificaciones y análisis históricos de impacto.
 - **Transmisión de Entrada**: Recibe el titular (`headline`), resumen crudo (`summary`) y activos vinculados (`assets`).
 - **Prompt Estructurado**: Diseñado para forzar al modelo a responder estrictamente en formato JSON utilizando las siguientes llaves:
@@ -71,6 +80,9 @@ Conecta el panel al modelo de lenguaje **Gemini 2.5 Flash** para generar explica
 ### [`DashboardContext.jsx`](file:///c:/Users/DIEGO/Documents/GitHub/agentic-scale/src/context/DashboardContext.jsx)
 Implementa un patrón de proveedor de estado (`useContext`) gobernado por un `useReducer`:
 
+- **Carga en Paralelo Asíncrona (`Promise.all`)**:
+  Al arrancar la aplicación, el efecto de carga consulta simultáneamente a `finnhubService.getLatestNews()` y `alphaService.getLatestNews()`. Mezcla los flujos resultantes, los ordena de forma cronológica descendente y aplica un fallback a `INITIAL_NEWS` en caso de que ambos fallen.
+
 - **Acciones Disponibles (`dispatch`)**:
   - `SET_NEWS_LOADING` / `SET_NEWS`: Carga y listado asíncrono de noticias en el radar.
   - `ADD_NEWS`: Inserción inmediata de noticias creadas manualmente a través del simulador de eventos.
@@ -86,7 +98,7 @@ Implementa un patrón de proveedor de estado (`useContext`) gobernado por un `us
   El contexto lee los briefings almacenados en el almacenamiento local del navegador (`scale_agents_briefings`) durante la inicialización. Cualquier cambio en las notas, justificaciones o estados se sincroniza automáticamente en segundo plano, persistiendo los avances del analista tras recargar la pantalla.
 
 - **Efecto de Análisis Automatizado**:
-  Un efecto reactivo monitorea los cambios en `selectedNewsId`. Si el usuario hace clic en una noticia cargada directamente de Finnhub (que no tiene análisis de impacto de IA previos), el contexto dispara automáticamente la llamada al servicio de Gemini, actualiza el estado de carga y fusiona la respuesta en la noticia en memoria de forma transparente.
+  Un efecto reactivo monitorea los cambios en `selectedNewsId`. Si el usuario hace clic en una noticia cargada directamente de Finnhub o Alpha Vantage (que no tiene análisis de impacto de IA previos), el contexto dispara automáticamente la llamada al servicio de Gemini, actualiza el estado de carga y fusiona la respuesta en la noticia en memoria de forma transparente.
 
 ---
 

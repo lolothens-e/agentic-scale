@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react'
 import { finnhubService } from '../services/finnhubService'
+import { alphaService } from '../services/alphaService'
 import { llmService } from '../services/llmService'
-import { INITIAL_BRIEFINGS } from '../services/mockData'
+import { INITIAL_BRIEFINGS, INITIAL_NEWS } from '../services/mockData'
 
 const DashboardContext = createContext(null)
 
@@ -93,11 +94,35 @@ export function DashboardProvider({ children }) {
   useEffect(() => {
     const loadInitialNews = async () => {
       dispatch({ type: 'SET_NEWS_LOADING', payload: true })
-      const data = await finnhubService.getLatestNews()
-      dispatch({ type: 'SET_NEWS', payload: data })
+      
+      // Fetch news from both Finnhub and Alpha Vantage in parallel
+      const [finnhubNews, alphaNews] = await Promise.all([
+        finnhubService.getLatestNews().catch(err => {
+          console.error("Finnhub load failed:", err)
+          return []
+        }),
+        alphaService.getLatestNews().catch(err => {
+          console.error("Alpha Vantage load failed:", err)
+          return []
+        })
+      ])
+
+      // Merge results
+      let merged = [...(finnhubNews || []), ...(alphaNews || [])]
+
+      // Fallback if no news fetched at all
+      if (merged.length === 0) {
+        merged = INITIAL_NEWS
+      } else {
+        // Sort chronologically descending
+        merged.sort((a, b) => new Date(b.date) - new Date(a.date))
+      }
+
+      dispatch({ type: 'SET_NEWS', payload: merged })
       dispatch({ type: 'SET_NEWS_LOADING', payload: false })
-      if (data.length > 0) {
-        dispatch({ type: 'SELECT_NEWS_ID', payload: data[0].id })
+      
+      if (merged.length > 0) {
+        dispatch({ type: 'SELECT_NEWS_ID', payload: merged[0].id })
       }
     }
     loadInitialNews()
