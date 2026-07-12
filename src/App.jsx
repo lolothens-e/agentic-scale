@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import './App.css'
+import { useMarketNews } from './hooks/useMarketNews'
 
 // Initial Mock Data
 const INITIAL_ASSETS = [
@@ -132,6 +133,18 @@ export default function App() {
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
+
+  const { fetchNewsForAssets, loading: newsLoading, error: newsError } = useMarketNews()
+
+  useEffect(() => {
+    async function loadRealNews() {
+      const realNews = await fetchNewsForAssets(INITIAL_ASSETS, 7)
+      if (realNews.length > 0) {
+        setNews((prev) => [...realNews, ...prev])
+      }
+    }
+    loadRealNews()
+  }, [fetchNewsForAssets])
 
   // Selected news item details
   const selectedNews = useMemo(() => {
@@ -290,6 +303,8 @@ export default function App() {
           <div className="section-header">
             <h2>Radar de Noticias y Activos</h2>
             <span className="count-badge">{filteredNews.length} Noticias</span>
+            {newsLoading && <span className="count-badge">Cargando Currents...</span>}
+            {newsError && <span className="count-badge bg-purple">Error: {newsError}</span>}
           </div>
 
           {/* Filters Area */}
