@@ -7,7 +7,7 @@ export default function ActionTrigger({ alertCreated, onClick }) {
       onClick={onClick}
       title={alertCreated ? "Alerta creada para revisión humana" : "Crear alerta de revisión"}
     >
-      {alertCreated ? '🔔 Alerta Lista' : '🔕 Crear Alerta'}
+      {alertCreated ? 'Alerta Lista' : 'Crear Alerta'}
     </button>
   )
 }

@@ -19,10 +19,10 @@ export default function BriefingCard({ brief }) {
   const handleAlertTrigger = () => {
     toggleAlert(brief.id)
     if (!brief.alertCreated) {
-      setToastMsg('🔔 Alerta de revisión enviada al equipo (Operación simulada segura).')
+      setToastMsg('Alerta de revisión enviada al equipo (Operación simulada segura).')
       setTimeout(() => setToastMsg(''), 3500)
     } else {
-      setToastMsg('🔕 Alerta cancelada.')
+      setToastMsg('Alerta cancelada.')
       setTimeout(() => setToastMsg(''), 2000)
     }
   }

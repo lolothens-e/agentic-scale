@@ -360,10 +360,13 @@ export function DashboardProvider({ children }) {
     const activeList = state.watchlists.find((w) => w.name === state.activeWatchlist)
     if (!activeList) return
     const watchlistAssets = activeList.assets.map((a) => a.toUpperCase())
+    const existingHeadlines = new Set(state.briefings.map((b) => b.newsHeadline))
     const matchingNews = state.news.filter((item) =>
       item.assets && item.assets.some((a) => watchlistAssets.includes(a.toUpperCase()))
     )
     matchingNews.forEach((item) => {
+      // Skip if this article already has a briefing
+      if (existingHeadlines.has(item.headline)) return
       const assetSymbol = item.assets[0] || 'GEN'
       const newBrief = {
         id: `brief-wl-${Date.now()}-${assetSymbol}`,
@@ -380,6 +383,7 @@ export function DashboardProvider({ children }) {
         justification: '',
         alertCreated: false,
       }
+      existingHeadlines.add(item.headline)
       dispatch({ type: 'ADD_BRIEFING', payload: newBrief })
     })
   }

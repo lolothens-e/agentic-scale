@@ -48,7 +48,7 @@ export default function ImpactDetail() {
     <section className="detail-section">
       <div className="section-header">
         <h2>Señal de Impacto Explicable</h2>
-        {selectedNews && (
+        {activeWatchlist === 'Todos' && selectedNews && (
           <button className="btn-secondary btn-sm" onClick={handleGenerateBriefing}>
             ⚙️ Generar Briefing
           </button>
