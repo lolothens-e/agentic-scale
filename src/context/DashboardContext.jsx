@@ -13,7 +13,7 @@ import {
   loadWatchlists,
   saveWatchlist,
   deleteWatchlistDoc,
-} from '../services/firestoreService'
+} from '../services/supabaseService'
 
 const DashboardContext = createContext(null)
 
@@ -325,8 +325,8 @@ export function DashboardProvider({ children }) {
               type: 'UPDATE_ANALYSIS',
               payload: { id: selectedNewsItem.id, analysis: cachedAnalysis },
             })
-            // Backfill Firestore cache
-            saveCachedAnalysis(selectedNewsItem.headline, cachedAnalysis)
+            // Backfill Supabase cache
+            saveCachedAnalysis(selectedNewsItem, cachedAnalysis)
             return
           }
         } catch (e) {
@@ -342,8 +342,8 @@ export function DashboardProvider({ children }) {
             selectedNewsItem.assets
           )
 
-          // Save to Firestore cache
-          saveCachedAnalysis(selectedNewsItem.headline, analysis)
+          // Save to Supabase cache
+          saveCachedAnalysis(selectedNewsItem, analysis)
 
           // Save to localStorage cache as offline backup
           try {
@@ -421,8 +421,8 @@ export function DashboardProvider({ children }) {
       alertCreated: false,
     }
     dispatch({ type: 'ADD_BRIEFING', payload: newBrief })
-    // Persist to Firestore
-    saveBriefing(newBrief)
+    // Persist to Supabase
+    saveBriefing(newBrief, item)
   }
 
   const setFilters = (newFilters) => {
@@ -459,8 +459,8 @@ export function DashboardProvider({ children }) {
       }
       existingHeadlines.add(item.headline)
       dispatch({ type: 'ADD_BRIEFING', payload: newBrief })
-      // Persist to Firestore
-      saveBriefing(newBrief)
+      // Persist to Supabase
+      saveBriefing(newBrief, item)
     })
   }
 
