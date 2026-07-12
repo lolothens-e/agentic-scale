@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useDashboard } from '../context/DashboardContext'
 import FilterBar from './FilterBar'
 import NewsCard from './NewsCard'
@@ -11,8 +11,35 @@ export default function NewsSidebar() {
     isLoadingNews, 
     watchlists, 
     activeWatchlist,
+    setActiveWatchlist, 
+    addWatchlist, 
+    deleteWatchlist 
   } = useDashboard()
   const { searchQuery, instrumentType, assetSymbol, recency } = filters
+
+  const [isCreating, setIsCreating] = useState(false)
+  const [newListName, setNewListName] = useState('')
+  const [newListAssets, setNewListAssets] = useState('')
+
+  const handleCreateWatchlist = (e) => {
+    e.preventDefault()
+    if (!newListName.trim()) return
+
+    const assets = newListAssets
+      .split(',')
+      .map(s => s.trim().toUpperCase())
+      .filter(Boolean)
+
+    addWatchlist({
+      name: newListName.trim(),
+      assets
+    })
+
+    setActiveWatchlist(newListName.trim())
+    setNewListName('')
+    setNewListAssets('')
+    setIsCreating(false)
+  }
 
   const filteredNews = useMemo(() => {
     return news.filter((item) => {
@@ -67,6 +94,70 @@ export default function NewsSidebar() {
         <h2>Radar de Noticias y Activos</h2>
         <span className="count-badge">{filteredNews.length} Noticias</span>
       </div>
+      <div className="watchlist-manager-panel">
+        <div className="watchlist-selector-header">
+          <span className="section-subtitle">Mis Listas de Seguimiento</span>
+          <button 
+            className="btn-add-watchlist" 
+            onClick={() => setIsCreating(!isCreating)}
+            title="Crear nueva lista de seguimiento"
+          >
+            {isCreating ? 'Cancelar' : '+ Nueva Lista'}
+          </button>
+        </div>
+
+        {isCreating ? (
+          <form className="watchlist-form" onSubmit={handleCreateWatchlist}>
+            <input 
+              type="text" 
+              placeholder="Nombre (ej: Mis Favoritos)" 
+              required
+              value={newListName}
+              onChange={e => setNewListName(e.target.value)}
+              className="watchlist-input"
+            />
+            <input 
+              type="text" 
+              placeholder="Activos (ej: NVDA, BTC, LQD)" 
+              required
+              value={newListAssets}
+              onChange={e => setNewListAssets(e.target.value)}
+              className="watchlist-input"
+            />
+            <button type="submit" className="btn-save-watchlist">Crear</button>
+          </form>
+        ) : (
+          <div className="watchlist-pills">
+            <button
+              className={`pill-btn ${activeWatchlist === 'Todos' ? 'active' : ''}`}
+              onClick={() => setActiveWatchlist('Todos')}
+            >
+              Todas
+            </button>
+            {watchlists.map(w => (
+              <div key={w.name} className={`pill-wrapper ${activeWatchlist === w.name ? 'active' : ''}`}>
+                <button
+                  className="pill-btn-select"
+                  onClick={() => setActiveWatchlist(w.name)}
+                >
+                  {w.name} <span className="pill-asset-count">({w.assets.length})</span>
+                </button>
+                <button 
+                  className="pill-btn-delete" 
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    deleteWatchlist(w.name)
+                  }}
+                  title="Eliminar lista"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
 
       <FilterBar />
 
