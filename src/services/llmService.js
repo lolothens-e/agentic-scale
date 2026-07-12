@@ -20,16 +20,19 @@ Headline: ${headline}
 Summary: ${summary}
 Related Tickers/Assets: ${assets && assets.length > 0 ? assets.join(', ') : 'General Market'}
 
-Respond with a strictly formatted JSON object (no markdown backticks, no other text) containing exactly the following keys and data types:
+CRITICAL REQUIREMENT: Respond with a strictly formatted JSON object (no markdown backticks, no other text) containing exactly the following keys and data types. All textual fields (explanation, evidence, historicalComparison, watchlist, associatedMovement, suggestedAction, translatedHeadline, translatedSummary) MUST be written in Spanish.
+
 {
+  "translatedHeadline": "Traducción al español muy precisa, fluida y profesional del titular (Headline) provisto.",
+  "translatedSummary": "Traducción y resumen ejecutivo al español del sumario (Summary) provisto.",
   "impact": "Positivo" | "Negativo" | "Neutral" | "Incierto",
   "confidence": number (between 1 and 100),
-  "explanation": "Clear explanation of the market transmission mechanism and expected asset pricing impact.",
-  "evidence": "Concrete facts, metrics, or statements from the news that back up this analysis.",
-  "historicalComparison": "Mention typical correlations, similar past market events (e.g. CPI beats, export bans), and historical statistical movements.",
-  "watchlist": "Categorized target watchlist name (e.g. 'Tecnología y Crecimiento', 'Activos Digitales', 'Renta Fija / Crédito', 'Materias Primas / Refugios')",
-  "associatedMovement": "Specific short-term projected asset movement (e.g. 'Posible alza de +3% a +5% en el corto plazo', 'Volatilidad lateral con soporte fuerte')",
-  "suggestedAction": "Clear actionable investigation suggestion for the human analyst (e.g. 'Monitorear niveles de soporte técnico y diversificar', 'Esperar confirmación regulatoria')"
+  "explanation": "Explicación clara en español del mecanismo de transmisión de mercado y el impacto esperado en el precio del activo.",
+  "evidence": "Hechos concretos, métricas o declaraciones en español extraídas de la noticia que respaldan este análisis.",
+  "historicalComparison": "Mencione correlaciones típicas en español, eventos pasados similares (ej. sorpresas de IPC, restricciones de exportación) y comportamiento estadístico histórico.",
+  "watchlist": "Categoría de lista de seguimiento sugerida en español (ej. 'Tecnología y Crecimiento', 'Activos Digitales', 'Renta Fija / Crédito', 'Materias Primas / Refugios')",
+  "associatedMovement": "Proyección específica en español del movimiento de precio a corto plazo (ej. 'Posible alza de +3% a +5% en el corto plazo', 'Volatilidad lateral con soporte fuerte')",
+  "suggestedAction": "Sugerencia de investigación clara y accionable en español para el analista humano (ej. 'Monitorear niveles de soporte técnico y diversificar', 'Esperar confirmación regulatoria')"
 }
 `
 
@@ -63,6 +66,8 @@ Respond with a strictly formatted JSON object (no markdown backticks, no other t
       const cleanJson = textResponse.trim().replace(/^```json\s*/i, '').replace(/```\s*$/, '')
       const result = JSON.parse(cleanJson)
       return {
+        translatedHeadline: result.translatedHeadline || headline,
+        translatedSummary: result.translatedSummary || summary,
         impact: result.impact || 'Neutral',
         confidence: parseInt(result.confidence) || 75,
         explanation: result.explanation || 'Análisis de mercado generado por el agente.',
@@ -159,6 +164,8 @@ function getSimulatedAnalysis(headline, summary, assets) {
   }
 
   return {
+    translatedHeadline: headline,
+    translatedSummary: summary,
     impact,
     confidence,
     explanation,

@@ -6,7 +6,7 @@ import HistoricalChart from './HistoricalChart'
 import LegalDisclaimer from './LegalDisclaimer'
 
 export default function ImpactDetail() {
-  const { news, selectedNewsId, isLoadingAnalysis, createBriefing } = useDashboard()
+  const { news, selectedNewsId, isLoadingAnalysis, createBriefing, createWatchlistBriefing, activeWatchlist } = useDashboard()
 
   const selectedNews = news.find((item) => item.id === selectedNewsId)
 
@@ -51,6 +51,15 @@ export default function ImpactDetail() {
         {selectedNews && (
           <button className="btn-secondary btn-sm" onClick={handleGenerateBriefing}>
             ⚙️ Generar Briefing
+          </button>
+        )}
+        {activeWatchlist !== 'Todos' && (
+          <button
+            className="btn-primary btn-sm"
+            onClick={createWatchlistBriefing}
+            title={`Generar briefings para todos los artículos en la lista "${activeWatchlist}"`}
+          >
+            📋 Briefing de Lista
           </button>
         )}
       </div>

@@ -3,7 +3,7 @@ import { useDashboard } from '../context/DashboardContext'
 import { INITIAL_ASSETS, getAssetType, getAssetName } from '../services/mockData'
 
 export default function FilterBar() {
-  const { news, filters, setFilters } = useDashboard()
+  const { news, filters, setFilters, watchlists, activeWatchlist } = useDashboard()
   const instrumentTypes = ['Todos', 'Acciones', 'Criptoactivos', 'Instrumentos de crédito', 'Otros']
 
   const availableAssets = React.useMemo(() => {
@@ -91,9 +91,18 @@ export default function FilterBar() {
           <label>Activo Específico</label>
           <select value={filters.assetSymbol} onChange={handleAssetChange}>
             <option value="Todos">Todos los activos</option>
-            {availableAssets.filter(
-              (a) => filters.instrumentType === 'Todos' || a.type === filters.instrumentType
-            ).map((asset) => (
+            {availableAssets.filter((a) => {
+              if (filters.instrumentType !== 'Todos' && a.type !== filters.instrumentType) {
+                return false
+              }
+              if (activeWatchlist && activeWatchlist !== 'Todos') {
+                const watchlistObj = watchlists.find(w => w.name === activeWatchlist)
+                if (watchlistObj && !watchlistObj.assets.includes(a.symbol)) {
+                  return false
+                }
+              }
+              return true
+            }).map((asset) => (
               <option key={asset.symbol} value={asset.symbol}>
                 {asset.symbol} - {asset.name}
               </option>

@@ -8,11 +8,14 @@ const DashboardContext = createContext(null)
 
 const LOCAL_STORAGE_KEY = 'scale_agents_briefings'
 const NEWS_STORAGE_KEY = 'scale_agents_news_data'
+const WATCHLISTS_STORAGE_KEY = 'scale_agents_watchlists'
 
 const initialState = {
   news: [],
   briefings: [],
   selectedNewsId: null,
+  watchlists: [],
+  activeWatchlist: 'Todos',
   filters: {
     instrumentType: 'Todos',
     assetSymbol: 'Todos',
@@ -44,7 +47,12 @@ function dashboardReducer(state, action) {
         ...state,
         news: state.news.map((item) =>
           item.id === action.payload.id
-            ? { ...item, ...action.payload.analysis }
+            ? { 
+                ...item, 
+                ...action.payload.analysis,
+                headline: action.payload.analysis.translatedHeadline || item.headline,
+                summary: action.payload.analysis.translatedSummary || item.summary
+              }
             : item
         ),
       }
@@ -82,6 +90,27 @@ function dashboardReducer(state, action) {
       return {
         ...state,
         filters: { ...state.filters, ...action.payload },
+      }
+    case 'SET_ACTIVE_WATCHLIST':
+      return {
+        ...state,
+        activeWatchlist: action.payload,
+      }
+    case 'SET_WATCHLISTS':
+      return {
+        ...state,
+        watchlists: action.payload,
+      }
+    case 'ADD_WATCHLIST':
+      return {
+        ...state,
+        watchlists: [...state.watchlists, action.payload],
+      }
+    case 'DELETE_WATCHLIST':
+      return {
+        ...state,
+        watchlists: state.watchlists.filter((w) => w.name !== action.payload),
+        activeWatchlist: state.activeWatchlist === action.payload ? 'Todos' : state.activeWatchlist,
       }
     default:
       return state
@@ -200,6 +229,31 @@ export function DashboardProvider({ children }) {
     }
   }, [state.briefings])
 
+  // 4. LocalStorage Watchlist Sync
+  useEffect(() => {
+    const storedWatchlists = localStorage.getItem(WATCHLISTS_STORAGE_KEY)
+    const defaultWatchlists = [
+      { name: 'Tecnología', assets: ['NVDA', 'TSLA', 'AAPL'] },
+      { name: 'Cripto & Oro', assets: ['BTC', 'ETH', 'GLD'] }
+    ]
+    if (storedWatchlists) {
+      try {
+        dispatch({ type: 'SET_WATCHLISTS', payload: JSON.parse(storedWatchlists) })
+      } catch (e) {
+        console.error("Failed to parse watchlists from localStorage", e)
+        dispatch({ type: 'SET_WATCHLISTS', payload: defaultWatchlists })
+      }
+    } else {
+      dispatch({ type: 'SET_WATCHLISTS', payload: defaultWatchlists })
+    }
+  }, [])
+
+  useEffect(() => {
+    if (state.watchlists.length > 0 || localStorage.getItem(WATCHLISTS_STORAGE_KEY)) {
+      localStorage.setItem(WATCHLISTS_STORAGE_KEY, JSON.stringify(state.watchlists))
+    }
+  }, [state.watchlists])
+
   // 3. React to selectedNewsId change to trigger LLM analysis if not present
   useEffect(() => {
     const selectedNewsItem = state.news.find((n) => n.id === state.selectedNewsId)
@@ -301,6 +355,47 @@ export function DashboardProvider({ children }) {
     dispatch({ type: 'SET_FILTERS', payload: newFilters })
   }
 
+  // Create briefings for all news items matching the active watchlist's assets
+  const createWatchlistBriefing = () => {
+    const activeList = state.watchlists.find((w) => w.name === state.activeWatchlist)
+    if (!activeList) return
+    const watchlistAssets = activeList.assets.map((a) => a.toUpperCase())
+    const matchingNews = state.news.filter((item) =>
+      item.assets && item.assets.some((a) => watchlistAssets.includes(a.toUpperCase()))
+    )
+    matchingNews.forEach((item) => {
+      const assetSymbol = item.assets[0] || 'GEN'
+      const newBrief = {
+        id: `brief-wl-${Date.now()}-${assetSymbol}`,
+        watchlist: `Lista: ${state.activeWatchlist}`,
+        targetAsset: assetSymbol,
+        newsHeadline: item.headline,
+        associatedMovement: item.associatedMovement || (item.impact
+          ? `Impacto ${item.impact} proyectado con confianza del ${item.confidence}%`
+          : 'Analizando impacto...'),
+        suggestedAction: item.suggestedAction || (item.explanation
+          ? `Investigar señal: ${item.explanation.substring(0, 100)}...`
+          : 'Investigar señal de impacto.'),
+        status: 'Pendiente',
+        justification: '',
+        alertCreated: false,
+      }
+      dispatch({ type: 'ADD_BRIEFING', payload: newBrief })
+    })
+  }
+
+  const setActiveWatchlist = (name) => {
+    dispatch({ type: 'SET_ACTIVE_WATCHLIST', payload: name })
+  }
+
+  const addWatchlist = (watchlistObj) => {
+    dispatch({ type: 'ADD_WATCHLIST', payload: watchlistObj })
+  }
+
+  const deleteWatchlist = (name) => {
+    dispatch({ type: 'DELETE_WATCHLIST', payload: name })
+  }
+
   return (
     <DashboardContext.Provider
       value={{
@@ -311,7 +406,11 @@ export function DashboardProvider({ children }) {
         updateBriefingJustification,
         toggleAlert,
         createBriefing,
+        createWatchlistBriefing,
         setFilters,
+        setActiveWatchlist,
+        addWatchlist,
+        deleteWatchlist,
       }}
     >
       {children}
