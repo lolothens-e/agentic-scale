@@ -1,8 +1,10 @@
 import React, { useState } from 'react'
+
 import { DashboardProvider, useDashboard } from './context/DashboardContext'
 import NewsSidebar from './components/NewsSidebar'
 import ImpactDetail from './components/ImpactDetail'
 import BriefingPanel from './components/BriefingPanel'
+
 import './App.css'
 
 function AppContent() {
@@ -51,7 +53,6 @@ function AppContent() {
     selectNews(newEntry.id)
     setShowAddNewsModal(false)
 
-    // Reset form
     setNewNewsForm({
       headline: '',
       source: 'Bloomberg',
@@ -70,7 +71,6 @@ function AppContent() {
 
   return (
     <div className="dashboard-container">
-      {/* Top Banner / Nav */}
       <header className="main-header">
         <div className="brand">
           <div className="logo-icon">▲</div>
@@ -86,19 +86,12 @@ function AppContent() {
         </div>
       </header>
 
-      {/* Main Grid Layout */}
       <div className="grid-layout">
-        {/* Left Column: News Feed & Filters */}
         <NewsSidebar />
-
-        {/* Center Column: Explainable Impact Signal */}
         <ImpactDetail />
-
-        {/* Right Column: Briefing de Mercado & Human Review */}
         <BriefingPanel />
       </div>
 
-      {/* Add News Modal Simulation */}
       {showAddNewsModal && (
         <div className="modal-backdrop">
           <div className="modal-content">

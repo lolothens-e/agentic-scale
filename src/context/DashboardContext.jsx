@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react'
 import { finnhubService } from '../services/finnhubService'
 import { alphaService } from '../services/alphaService'
+import { currentsService } from '../services/currentsService'
 import { llmService } from '../services/llmService'
 import { INITIAL_BRIEFINGS, INITIAL_NEWS } from '../services/mockData'
 
@@ -137,7 +138,7 @@ export function DashboardProvider({ children }) {
       }
 
       // Fetch news from both Finnhub and Alpha Vantage in parallel
-      const [finnhubNews, alphaNews] = await Promise.all([
+      const [finnhubNews, alphaNews, currentsNews] = await Promise.all([
         finnhubService.getLatestNews().catch(err => {
           console.error("Finnhub load failed:", err)
           return []
@@ -145,12 +146,15 @@ export function DashboardProvider({ children }) {
         alphaService.getLatestNews().catch(err => {
           console.error("Alpha Vantage load failed:", err)
           return []
+        }),
+        currentsService.getLatestNews().catch(err => {
+          console.error("Currents load failed:", err)
+          return []
         })
       ])
 
       // Merge API results
-      let apiNews = [...(finnhubNews || []), ...(alphaNews || [])]
-
+      let apiNews = [...(finnhubNews || []), ...(alphaNews || []), ...(currentsNews || [])]
       // Combine INITIAL_NEWS, cached news, and API news, deduplicating by headline.
       // 1. Start with INITIAL_NEWS so simulated news items are always present.
       const mergedMap = new Map()
