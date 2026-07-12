@@ -4,6 +4,16 @@ import { alphaService } from '../services/alphaService'
 import { currentsService } from '../services/currentsService'
 import { llmService } from '../services/llmService'
 import { INITIAL_BRIEFINGS, INITIAL_NEWS } from '../services/mockData'
+import {
+  loadBriefings,
+  saveBriefing,
+  updateBriefingField,
+  getCachedAnalysis,
+  saveCachedAnalysis,
+  loadWatchlists,
+  saveWatchlist,
+  deleteWatchlistDoc,
+} from '../services/supabaseService'
 
 const DashboardContext = createContext(null)
 
@@ -126,7 +136,7 @@ export function DashboardProvider({ children }) {
     const loadInitialNews = async () => {
       dispatch({ type: 'SET_NEWS_LOADING', payload: true })
       
-      // Load already cached news from LocalStorage
+      // Load already cached news from LocalStorage (fast local cache for news bodies)
       let cachedNews = []
       try {
         const stored = localStorage.getItem(NEWS_STORAGE_KEY)
@@ -137,7 +147,7 @@ export function DashboardProvider({ children }) {
         console.error("Failed to load cached news", e)
       }
 
-      // Fetch news from both Finnhub and Alpha Vantage in parallel
+      // Fetch news from Finnhub, Alpha Vantage, and Currents in parallel
       const [finnhubNews, alphaNews, currentsNews] = await Promise.all([
         finnhubService.getLatestNews().catch(err => {
           console.error("Finnhub load failed:", err)
@@ -175,7 +185,7 @@ export function DashboardProvider({ children }) {
       // Sort chronologically descending
       merged.sort((a, b) => new Date(b.date) - new Date(a.date))
 
-      // Pre-populate with cached analyses where available
+      // Pre-populate with cached analyses from localStorage (fast path)
       try {
         const cacheKey = 'scale_agents_news_cache'
         const currentCache = JSON.parse(localStorage.getItem(cacheKey) || '{}')
@@ -191,7 +201,7 @@ export function DashboardProvider({ children }) {
 
       dispatch({ type: 'SET_NEWS', payload: merged })
       
-      // Save initial merged news list to cache
+      // Save initial merged news list to local cache
       if (merged.length > 0) {
         localStorage.setItem(NEWS_STORAGE_KEY, JSON.stringify(merged))
       }
@@ -205,80 +215,125 @@ export function DashboardProvider({ children }) {
     loadInitialNews()
   }, [])
 
-  // 2. Reactively Sync all state.news updates to LocalStorage (e.g. after simulation or AI analysis)
+  // 2. Reactively Sync all state.news updates to LocalStorage
   useEffect(() => {
     if (state.news.length > 0) {
       localStorage.setItem(NEWS_STORAGE_KEY, JSON.stringify(state.news))
     }
   }, [state.news])
 
-  // 3. LocalStorage Briefing Sync
+  // 3. Briefing Loading — Firestore first, localStorage fallback
   useEffect(() => {
-    const storedBriefs = localStorage.getItem(LOCAL_STORAGE_KEY)
-    if (storedBriefs) {
-      try {
-        dispatch({ type: 'SET_BRIEFINGS', payload: JSON.parse(storedBriefs) })
-      } catch (e) {
-        console.error("Failed to parse briefings from localStorage", e)
-        dispatch({ type: 'SET_BRIEFINGS', payload: INITIAL_BRIEFINGS })
+    const initBriefings = async () => {
+      const firestoreBriefings = await loadBriefings()
+
+      if (firestoreBriefings && firestoreBriefings.length > 0) {
+        dispatch({ type: 'SET_BRIEFINGS', payload: firestoreBriefings })
+        // Also sync to localStorage as offline backup
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(firestoreBriefings))
+      } else {
+        // Fallback to localStorage
+        const storedBriefs = localStorage.getItem(LOCAL_STORAGE_KEY)
+        if (storedBriefs) {
+          try {
+            const parsed = JSON.parse(storedBriefs)
+            dispatch({ type: 'SET_BRIEFINGS', payload: parsed })
+            // Backfill Firestore with localStorage data
+            parsed.forEach((b) => saveBriefing(b))
+          } catch (e) {
+            console.error("Failed to parse briefings from localStorage", e)
+            dispatch({ type: 'SET_BRIEFINGS', payload: INITIAL_BRIEFINGS })
+          }
+        } else {
+          dispatch({ type: 'SET_BRIEFINGS', payload: INITIAL_BRIEFINGS })
+          // Seed Firestore with initial briefings
+          INITIAL_BRIEFINGS.forEach((b) => saveBriefing(b))
+        }
       }
-    } else {
-      dispatch({ type: 'SET_BRIEFINGS', payload: INITIAL_BRIEFINGS })
     }
+    initBriefings()
   }, [])
 
+  // 4. Sync briefings to localStorage as offline backup (on every change)
   useEffect(() => {
     if (state.briefings.length > 0 || localStorage.getItem(LOCAL_STORAGE_KEY)) {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state.briefings))
     }
   }, [state.briefings])
 
-  // 4. LocalStorage Watchlist Sync
+  // 5. Watchlist Loading — Firestore first, localStorage fallback
   useEffect(() => {
-    const storedWatchlists = localStorage.getItem(WATCHLISTS_STORAGE_KEY)
-    const defaultWatchlists = [
-      { name: 'Tecnología', assets: ['NVDA', 'TSLA', 'AAPL'] },
-      { name: 'Cripto & Oro', assets: ['BTC', 'ETH', 'GLD'] }
-    ]
-    if (storedWatchlists) {
-      try {
-        dispatch({ type: 'SET_WATCHLISTS', payload: JSON.parse(storedWatchlists) })
-      } catch (e) {
-        console.error("Failed to parse watchlists from localStorage", e)
-        dispatch({ type: 'SET_WATCHLISTS', payload: defaultWatchlists })
+    const initWatchlists = async () => {
+      const defaultWatchlists = [
+        { name: 'Tecnología', assets: ['NVDA', 'TSLA', 'AAPL'] },
+        { name: 'Cripto & Oro', assets: ['BTC', 'ETH', 'GLD'] }
+      ]
+      const firestoreWatchlists = await loadWatchlists()
+
+      if (firestoreWatchlists && firestoreWatchlists.length > 0) {
+        dispatch({ type: 'SET_WATCHLISTS', payload: firestoreWatchlists })
+        localStorage.setItem(WATCHLISTS_STORAGE_KEY, JSON.stringify(firestoreWatchlists))
+      } else {
+        const storedWatchlists = localStorage.getItem(WATCHLISTS_STORAGE_KEY)
+        if (storedWatchlists) {
+          try {
+            const parsed = JSON.parse(storedWatchlists)
+            dispatch({ type: 'SET_WATCHLISTS', payload: parsed })
+            parsed.forEach((w) => saveWatchlist(w))
+          } catch (e) {
+            console.error("Failed to parse watchlists from localStorage", e)
+            dispatch({ type: 'SET_WATCHLISTS', payload: defaultWatchlists })
+          }
+        } else {
+          dispatch({ type: 'SET_WATCHLISTS', payload: defaultWatchlists })
+          defaultWatchlists.forEach((w) => saveWatchlist(w))
+        }
       }
-    } else {
-      dispatch({ type: 'SET_WATCHLISTS', payload: defaultWatchlists })
     }
+    initWatchlists()
   }, [])
 
+  // 6. Sync watchlists to localStorage as offline backup
   useEffect(() => {
     if (state.watchlists.length > 0 || localStorage.getItem(WATCHLISTS_STORAGE_KEY)) {
       localStorage.setItem(WATCHLISTS_STORAGE_KEY, JSON.stringify(state.watchlists))
     }
   }, [state.watchlists])
 
-  // 3. React to selectedNewsId change to trigger LLM analysis if not present
+  // 7. React to selectedNewsId change to trigger LLM analysis if not present
   useEffect(() => {
     const selectedNewsItem = state.news.find((n) => n.id === state.selectedNewsId)
     if (selectedNewsItem && selectedNewsItem.impact === null) {
-      // First check LocalStorage cache to avoid Gemini call entirely
-      const cacheKey = 'scale_agents_news_cache'
-      try {
-        const currentCache = JSON.parse(localStorage.getItem(cacheKey) || '{}')
-        const cachedAnalysis = currentCache[selectedNewsItem.headline]
-        if (cachedAnalysis) {
+      const analyzeSelectedNews = async () => {
+        // Check Firestore cache first, then localStorage cache
+        const firestoreCached = await getCachedAnalysis(selectedNewsItem.headline)
+        if (firestoreCached) {
           dispatch({
             type: 'UPDATE_ANALYSIS',
-            payload: { id: selectedNewsItem.id, analysis: cachedAnalysis },
+            payload: { id: selectedNewsItem.id, analysis: firestoreCached },
           })
           return
         }
-      } catch (e) {
-        console.error("Failed to read from news cache:", e)
-      }
 
-      const analyzeSelectedNews = async () => {
+        // Fallback: check localStorage cache
+        const cacheKey = 'scale_agents_news_cache'
+        try {
+          const currentCache = JSON.parse(localStorage.getItem(cacheKey) || '{}')
+          const cachedAnalysis = currentCache[selectedNewsItem.headline]
+          if (cachedAnalysis) {
+            dispatch({
+              type: 'UPDATE_ANALYSIS',
+              payload: { id: selectedNewsItem.id, analysis: cachedAnalysis },
+            })
+            // Backfill Supabase cache
+            saveCachedAnalysis(selectedNewsItem, cachedAnalysis)
+            return
+          }
+        } catch (e) {
+          console.error("Failed to read from news cache:", e)
+        }
+
+        // No cache hit — call Gemini
         dispatch({ type: 'SET_ANALYSIS_LOADING', payload: true })
         try {
           const analysis = await llmService.analyzeNews(
@@ -287,7 +342,10 @@ export function DashboardProvider({ children }) {
             selectedNewsItem.assets
           )
 
-          // Save to LocalStorage cache
+          // Save to Supabase cache
+          saveCachedAnalysis(selectedNewsItem, analysis)
+
+          // Save to localStorage cache as offline backup
           try {
             const currentCache = JSON.parse(localStorage.getItem(cacheKey) || '{}')
             currentCache[selectedNewsItem.headline] = analysis
@@ -311,7 +369,8 @@ export function DashboardProvider({ children }) {
     }
   }, [state.selectedNewsId, state.news])
 
-  // Context Actions
+  // ─── Context Actions ────────────────────────────────────────────────
+
   const selectNews = (id) => {
     dispatch({ type: 'SELECT_NEWS_ID', payload: id })
   }
@@ -322,14 +381,23 @@ export function DashboardProvider({ children }) {
 
   const updateBriefingStatus = (id, status) => {
     dispatch({ type: 'UPDATE_BRIEFING_STATUS', payload: { id, status } })
+    // Sync to Firestore
+    updateBriefingField(id, 'status', status)
   }
 
   const updateBriefingJustification = (id, justification) => {
     dispatch({ type: 'UPDATE_BRIEFING_JUSTIFICATION', payload: { id, justification } })
+    // Sync to Firestore
+    updateBriefingField(id, 'justification', justification)
   }
 
   const toggleAlert = (id) => {
     dispatch({ type: 'TOGGLE_ALERT', payload: { id } })
+    // Find the current state and sync the toggled value
+    const briefing = state.briefings.find((b) => b.id === id)
+    if (briefing) {
+      updateBriefingField(id, 'alertCreated', !briefing.alertCreated)
+    }
   }
 
   const createBriefing = (newsId) => {
@@ -353,6 +421,8 @@ export function DashboardProvider({ children }) {
       alertCreated: false,
     }
     dispatch({ type: 'ADD_BRIEFING', payload: newBrief })
+    // Persist to Supabase
+    saveBriefing(newBrief, item)
   }
 
   const setFilters = (newFilters) => {
@@ -389,6 +459,8 @@ export function DashboardProvider({ children }) {
       }
       existingHeadlines.add(item.headline)
       dispatch({ type: 'ADD_BRIEFING', payload: newBrief })
+      // Persist to Supabase
+      saveBriefing(newBrief, item)
     })
   }
 
@@ -398,10 +470,14 @@ export function DashboardProvider({ children }) {
 
   const addWatchlist = (watchlistObj) => {
     dispatch({ type: 'ADD_WATCHLIST', payload: watchlistObj })
+    // Persist to Firestore
+    saveWatchlist(watchlistObj)
   }
 
   const deleteWatchlist = (name) => {
     dispatch({ type: 'DELETE_WATCHLIST', payload: name })
+    // Delete from Firestore
+    deleteWatchlistDoc(name)
   }
 
   return (
