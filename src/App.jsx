@@ -1,7 +1,16 @@
+<<<<<<< HEAD
 import React, { useState, useMemo, useEffect } from 'react'
+=======
+import React, { useState } from 'react'
+import { DashboardProvider, useDashboard } from './context/DashboardContext'
+import NewsSidebar from './components/NewsSidebar'
+import ImpactDetail from './components/ImpactDetail'
+import BriefingPanel from './components/BriefingPanel'
+>>>>>>> origin/main
 import './App.css'
 import { useMarketNews } from './hooks/useMarketNews'
 
+<<<<<<< HEAD
 // Initial Mock Data
 const INITIAL_ASSETS = [
   { symbol: 'NVDA', name: 'NVIDIA Corp.', type: 'Acciones' },
@@ -231,6 +240,10 @@ export default function App() {
   }
 
   // Quick form for simulating a new news entry (for rapid testing)
+=======
+function AppContent() {
+  const { addNewsItem, selectNews } = useDashboard()
+>>>>>>> origin/main
   const [showAddNewsModal, setShowAddNewsModal] = useState(false)
   const [newNewsForm, setNewNewsForm] = useState({
     headline: '',
@@ -242,11 +255,18 @@ export default function App() {
     historicalComparison: '',
     explanation: '',
     evidence: '',
+    watchlist: '',
+    associatedMovement: '',
+    suggestedAction: '',
   })
 
   const handleCreateNews = (e) => {
     e.preventDefault()
-    const assets = newNewsForm.assetsString.split(',').map(s => s.trim().toUpperCase()).filter(Boolean)
+    const assets = newNewsForm.assetsString
+      .split(',')
+      .map((s) => s.trim().toUpperCase())
+      .filter(Boolean)
+
     const newEntry = {
       id: `news-${Date.now()}`,
       headline: newNewsForm.headline || 'Untitled Market Update',
@@ -254,16 +274,21 @@ export default function App() {
       date: new Date().toISOString(),
       assets,
       summary: newNewsForm.summary || 'No summary details provided.',
-      historicalComparison: newNewsForm.historicalComparison || 'No historical comparison data available.',
+      historicalComparison: newNewsForm.historicalComparison || '',
       impact: newNewsForm.impact,
       confidence: parseInt(newNewsForm.confidence) || 80,
-      explanation: newNewsForm.explanation || 'Automatically parsed signal from new source.',
-      evidence: newNewsForm.evidence || 'Public release market data.',
+      explanation: newNewsForm.explanation || '',
+      evidence: newNewsForm.evidence || '',
+      watchlist: newNewsForm.watchlist || '',
+      associatedMovement: newNewsForm.associatedMovement || '',
+      suggestedAction: newNewsForm.suggestedAction || '',
     }
-    setNews([newEntry, ...news])
-    setSelectedNewsId(newEntry.id)
+
+    addNewsItem(newEntry)
+    selectNews(newEntry.id)
     setShowAddNewsModal(false)
-    // reset form
+
+    // Reset form
     setNewNewsForm({
       headline: '',
       source: 'Bloomberg',
@@ -274,6 +299,9 @@ export default function App() {
       historicalComparison: '',
       explanation: '',
       evidence: '',
+      watchlist: '',
+      associatedMovement: '',
+      suggestedAction: '',
     })
   }
 
@@ -297,8 +325,8 @@ export default function App() {
 
       {/* Main Grid Layout */}
       <div className="grid-layout">
-        
         {/* Left Column: News Feed & Filters */}
+<<<<<<< HEAD
         <section className="feed-section">
           <div className="section-header">
             <h2>Radar de Noticias y Activos</h2>
@@ -306,264 +334,15 @@ export default function App() {
             {newsLoading && <span className="count-badge">Cargando Currents...</span>}
             {newsError && <span className="count-badge bg-purple">Error: {newsError}</span>}
           </div>
+=======
+        <NewsSidebar />
+>>>>>>> origin/main
 
-          {/* Filters Area */}
-          <div className="filter-card">
-            <div className="search-bar">
-              <input
-                type="text"
-                placeholder="Buscar noticia por palabra clave..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              {searchQuery && (
-                <button className="clear-search" onClick={() => setSearchQuery('')}>×</button>
-              )}
-            </div>
-
-            <div className="filter-dropdowns">
-              <div className="filter-group">
-                <label>Tipo de Instrumento</label>
-                <select
-                  value={selectedInstrumentType}
-                  onChange={(e) => {
-                    setSelectedInstrumentType(e.target.value)
-                    setSelectedAssetSymbol('Todos') // Reset asset filter when type changes
-                  }}
-                >
-                  {instrumentTypes.map((type) => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="filter-group">
-                <label>Activo Específico</label>
-                <select
-                  value={selectedAssetSymbol}
-                  onChange={(e) => setSelectedAssetSymbol(e.target.value)}
-                >
-                  <option value="Todos">Todos los activos</option>
-                  {INITIAL_ASSETS.filter(a => selectedInstrumentType === 'Todos' || a.type === selectedInstrumentType).map((asset) => (
-                    <option key={asset.symbol} value={asset.symbol}>
-                      {asset.symbol} - {asset.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="filter-group">
-                <label>Antigüedad</label>
-                <select
-                  value={recencyFilter}
-                  onChange={(e) => setRecencyFilter(e.target.value)}
-                >
-                  <option value="Todos">Cualquier fecha</option>
-                  <option value="24h">Últimas 24 horas</option>
-                  <option value="7d">Últimos 7 días</option>
-                  <option value="30d">Últimos 30 días</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* News List */}
-          <div className="news-list-container">
-            {filteredNews.length === 0 ? (
-              <div className="empty-state">
-                <p>No se encontraron noticias con los filtros actuales.</p>
-              </div>
-            ) : (
-              filteredNews.map((item) => {
-                const isSelected = item.id === selectedNewsId
-                const impactClass = `impact-tag ${item.impact.toLowerCase()}`
-                const dateObj = new Date(item.date)
-                const formattedDate = dateObj.toLocaleDateString('es-ES', {
-                  day: '2-digit',
-                  month: 'short',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })
-
-                return (
-                  <div
-                    key={item.id}
-                    className={`news-card ${isSelected ? 'selected' : ''}`}
-                    onClick={() => setSelectedNewsId(item.id)}
-                  >
-                    <div className="news-card-header">
-                      <div className="news-source-meta">
-                        <span className="source-badge">{item.source}</span>
-                        <span className="date-text">{formattedDate}</span>
-                      </div>
-                      <span className={impactClass}>{item.impact}</span>
-                    </div>
-
-                    <h3 className="news-headline">{item.headline}</h3>
-                    
-                    <p className="news-summary-preview">
-                      {item.summary.length > 140 ? `${item.summary.substring(0, 140)}...` : item.summary}
-                    </p>
-
-                    <div className="news-tags">
-                      {item.assets.map((symbol) => {
-                        const assetObj = INITIAL_ASSETS.find((a) => a.symbol === symbol)
-                        const assetType = assetObj ? assetObj.type : 'Activo'
-                        return (
-                          <span key={symbol} className="asset-tag" title={assetType}>
-                            {symbol}
-                          </span>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )
-              })
-            )}
-          </div>
-        </section>
-
-        {/* Center / Detail Column: Explanable Impact Signal */}
-        <section className="detail-section">
-          <div className="section-header">
-            <h2>Señal de Impacto Explicable</h2>
-            {selectedNews && (
-              <button className="btn-secondary btn-sm" onClick={createBriefingFromSelected}>
-                ⚙️ Generar Briefing
-              </button>
-            )}
-          </div>
-
-          {selectedNews ? (
-            <div className="detail-card">
-              <div className="detail-hero">
-                <div className="detail-header-tags">
-                  <span className="source-large">{selectedNews.source}</span>
-                  <span className="date-large">
-                    {new Date(selectedNews.date).toLocaleString('es-ES')}
-                  </span>
-                </div>
-                <h2 className="detail-title">{selectedNews.headline}</h2>
-                <div className="asset-chips">
-                  {selectedNews.assets.map(symbol => (
-                    <span key={symbol} className="chip-large">{symbol}</span>
-                  ))}
-                </div>
-              </div>
-
-              <div className="metrics-row">
-                <div className="metric-box">
-                  <span className="metric-label">Dirección del Impacto</span>
-                  <span className={`metric-value impact-text-${selectedNews.impact.toLowerCase()}`}>
-                    {selectedNews.impact}
-                  </span>
-                </div>
-                <div className="metric-box">
-                  <span className="metric-label">Nivel de Confianza</span>
-                  <span className="metric-value text-blue">{selectedNews.confidence}%</span>
-                </div>
-              </div>
-
-              <div className="detail-body">
-                <div className="detail-group">
-                  <h3>Resumen del Evento</h3>
-                  <p>{selectedNews.summary}</p>
-                </div>
-
-                <div className="detail-group highlight-box">
-                  <h3>Comparativa Histórica</h3>
-                  <p className="comparison-text">{selectedNews.historicalComparison}</p>
-                </div>
-
-                <div className="detail-group">
-                  <h3>Explicación de la Señal (Evidencia)</h3>
-                  <p className="explanation-text">{selectedNews.explanation}</p>
-                  <div className="evidence-card">
-                    <strong>Datos de Respaldo:</strong>
-                    <p>{selectedNews.evidence}</p>
-                  </div>
-                </div>
-
-                <div className="disclaimer-box">
-                  <strong>Aviso de Riesgo:</strong> Esta señal se genera automáticamente a efectos analíticos con datos de prueba/reales. No constituye asesoría financiera personalizada ni garantiza rendimientos futuros. Las decisiones operativas recaen exclusivamente bajo la revisión humana.
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="empty-state-card">
-              <p>Selecciona una noticia para visualizar su análisis detallado de señal e impacto.</p>
-            </div>
-          )}
-        </section>
+        {/* Center Column: Explainable Impact Signal */}
+        <ImpactDetail />
 
         {/* Right Column: Briefing de Mercado & Human Review */}
-        <section className="briefing-section">
-          <div className="section-header">
-            <h2>Briefing y Revisión Humana</h2>
-            <span className="count-badge bg-purple">{briefings.length} Reportes</span>
-          </div>
-
-          <div className="briefing-list">
-            {briefings.map((brief) => {
-              const statusClass = `status-select ${brief.status.toLowerCase()}`
-              return (
-                <div key={brief.id} className={`brief-card status-border-${brief.status.toLowerCase()}`}>
-                  <div className="brief-card-header">
-                    <span className="watchlist-name">{brief.watchlist}</span>
-                    <span className="asset-bubble">{brief.targetAsset}</span>
-                  </div>
-
-                  <h4 className="brief-news-title">{brief.newsHeadline}</h4>
-
-                  <div className="brief-field">
-                    <strong>Movimiento Estimado:</strong>
-                    <p>{brief.associatedMovement}</p>
-                  </div>
-
-                  <div className="brief-field">
-                    <strong>Acción Recomendada:</strong>
-                    <p>{brief.suggestedAction}</p>
-                  </div>
-
-                  {/* Justificación del analista */}
-                  <div className="brief-field justification-input-field">
-                    <label>Justificación del Analista:</label>
-                    <textarea
-                      placeholder="Escribe la justificación o notas adicionales sobre esta señal..."
-                      value={brief.justification}
-                      onChange={(e) => handleJustificationChange(brief.id, e.target.value)}
-                    />
-                  </div>
-
-                  {/* Action Bar */}
-                  <div className="brief-actions">
-                    <div className="status-selector">
-                      <label>Estado:</label>
-                      <select
-                        value={brief.status}
-                        onChange={(e) => handleStatusChange(brief.id, e.target.value)}
-                        className={statusClass}
-                      >
-                        <option value="Pendiente">Pendiente</option>
-                        <option value="Revisada">Revisada</option>
-                        <option value="Escalada">Escalada</option>
-                        <option value="Descartada">Descartada</option>
-                      </select>
-                    </div>
-
-                    <button
-                      className={`btn-alert ${brief.alertCreated ? 'active' : ''}`}
-                      onClick={() => toggleAlertCreated(brief.id)}
-                      title={brief.alertCreated ? "Alerta creada para revisión humana" : "Crear alerta de revisión"}
-                    >
-                      {brief.alertCreated ? '🔔 Alerta Lista' : '🔕 Crear Alerta'}
-                    </button>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </section>
+        <BriefingPanel />
       </div>
 
       {/* Add News Modal Simulation */}
@@ -665,6 +444,37 @@ export default function App() {
                 />
               </div>
 
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Watchlist Destino (Opcional)</label>
+                  <input
+                    type="text"
+                    placeholder="ej. Renta Fija / Crédito"
+                    value={newNewsForm.watchlist}
+                    onChange={(e) => setNewNewsForm({ ...newNewsForm, watchlist: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Movimiento Estimado (Opcional)</label>
+                  <input
+                    type="text"
+                    placeholder="ej. Corrección de -3% a -5%"
+                    value={newNewsForm.associatedMovement}
+                    onChange={(e) => setNewNewsForm({ ...newNewsForm, associatedMovement: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Acción de Investigación Sugerida (Opcional)</label>
+                <input
+                  type="text"
+                  placeholder="ej. Comprar en retrocesos técnicos..."
+                  value={newNewsForm.suggestedAction}
+                  onChange={(e) => setNewNewsForm({ ...newNewsForm, suggestedAction: e.target.value })}
+                />
+              </div>
+
               <div className="form-actions">
                 <button type="button" className="btn-secondary" onClick={() => setShowAddNewsModal(false)}>
                   Cancelar
@@ -681,3 +491,10 @@ export default function App() {
   )
 }
 
+export default function App() {
+  return (
+    <DashboardProvider>
+      <AppContent />
+    </DashboardProvider>
+  )
+}

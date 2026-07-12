@@ -1,0 +1,61 @@
+import React from 'react'
+import { useDashboard } from '../context/DashboardContext'
+import { getAssetType } from '../services/mockData'
+
+export default function NewsCard({ item }) {
+  const { selectedNewsId, selectNews, setFilters } = useDashboard()
+  const isSelected = item.id === selectedNewsId
+  
+  const impactClass = item.impact 
+    ? `impact-tag ${item.impact.toLowerCase()}` 
+    : 'impact-tag pending-analysis'
+
+  const dateObj = new Date(item.date)
+  const formattedDate = dateObj.toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+
+  return (
+    <div
+      className={`news-card ${isSelected ? 'selected' : ''}`}
+      onClick={() => selectNews(item.id)}
+    >
+      <div className="news-card-header">
+        <div className="news-source-meta">
+          <span className="source-badge">{item.source}</span>
+          <span className="date-text">{formattedDate}</span>
+        </div>
+        <span className={impactClass}>{item.impact || 'Analizando...'}</span>
+      </div>
+
+      <h3 className="news-headline">{item.headline}</h3>
+
+      <p className="news-summary-preview">
+        {item.summary.length > 140 ? `${item.summary.substring(0, 140)}...` : item.summary}
+      </p>
+
+      <div className="news-tags">
+        {item.assets && item.assets.map((symbol) => {
+          const assetType = getAssetType(symbol)
+
+          return (
+            <span 
+              key={symbol} 
+              className="asset-tag click-filterable" 
+              title={assetType}
+              onClick={(e) => {
+                e.stopPropagation()
+                setFilters({ assetSymbol: symbol })
+              }}
+            >
+              {symbol}
+            </span>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
