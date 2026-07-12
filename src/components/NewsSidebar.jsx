@@ -2,7 +2,7 @@ import React, { useMemo } from 'react'
 import { useDashboard } from '../context/DashboardContext'
 import FilterBar from './FilterBar'
 import NewsCard from './NewsCard'
-import { INITIAL_ASSETS } from '../services/mockData'
+import { getAssetType } from '../services/mockData'
 
 export default function NewsSidebar() {
   const { news, filters, isLoadingNews } = useDashboard()
@@ -20,8 +20,7 @@ export default function NewsSidebar() {
       // 2. Instrument Type
       if (instrumentType !== 'Todos') {
         const hasAssetOfType = item.assets.some((symbol) => {
-          const assetObj = INITIAL_ASSETS.find((a) => a.symbol === symbol)
-          return assetObj && assetObj.type === instrumentType
+          return getAssetType(symbol) === instrumentType
         })
         if (!hasAssetOfType) return false
       }
@@ -36,12 +35,13 @@ export default function NewsSidebar() {
         const newsDate = new Date(item.date)
         const now = new Date()
         const diffTime = Math.abs(now - newsDate)
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+        const diffDays = diffTime / (1000 * 60 * 60 * 24)
 
         if (recency === '24h' && diffDays > 1) return false
         if (recency === '7d' && diffDays > 7) return false
         if (recency === '30d' && diffDays > 30) return false
       }
+
 
       return true
     })

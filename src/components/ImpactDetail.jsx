@@ -2,6 +2,7 @@ import React from 'react'
 import { useDashboard } from '../context/DashboardContext'
 import ImpactBadge from './ImpactBadge'
 import PriceComparison from './PriceComparison'
+import HistoricalChart from './HistoricalChart'
 import LegalDisclaimer from './LegalDisclaimer'
 
 export default function ImpactDetail() {
@@ -86,6 +87,8 @@ export default function ImpactDetail() {
               impact={selectedNews.impact} 
               historicalComparison={selectedNews.historicalComparison} 
             />
+
+            <HistoricalChart assets={selectedNews.assets} />
 
             <div className="detail-group">
               <h3>Explicación de la Señal (Evidencia)</h3>

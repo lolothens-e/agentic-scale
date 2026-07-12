@@ -1,6 +1,6 @@
 import React from 'react'
 import { useDashboard } from '../context/DashboardContext'
-import { INITIAL_ASSETS } from '../services/mockData'
+import { getAssetType } from '../services/mockData'
 
 export default function NewsCard({ item }) {
   const { selectedNewsId, selectNews, setFilters } = useDashboard()
@@ -39,8 +39,8 @@ export default function NewsCard({ item }) {
 
       <div className="news-tags">
         {item.assets && item.assets.map((symbol) => {
-          const assetObj = INITIAL_ASSETS.find((a) => a.symbol === symbol)
-          const assetType = assetObj ? assetObj.type : 'Activo'
+          const assetType = getAssetType(symbol)
+
           return (
             <span 
               key={symbol} 

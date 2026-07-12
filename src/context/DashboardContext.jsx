@@ -7,6 +7,7 @@ import { INITIAL_BRIEFINGS, INITIAL_NEWS } from '../services/mockData'
 const DashboardContext = createContext(null)
 
 const LOCAL_STORAGE_KEY = 'scale_agents_briefings'
+const NEWS_STORAGE_KEY = 'scale_agents_news_data'
 
 const initialState = {
   news: [],
@@ -90,11 +91,22 @@ function dashboardReducer(state, action) {
 export function DashboardProvider({ children }) {
   const [state, dispatch] = useReducer(dashboardReducer, initialState)
 
-  // 1. Initial News Loading
+  // 1. Initial News Loading with Cache Support
   useEffect(() => {
     const loadInitialNews = async () => {
       dispatch({ type: 'SET_NEWS_LOADING', payload: true })
       
+      // Load already cached news from LocalStorage
+      let cachedNews = []
+      try {
+        const stored = localStorage.getItem(NEWS_STORAGE_KEY)
+        if (stored) {
+          cachedNews = JSON.parse(stored)
+        }
+      } catch (e) {
+        console.error("Failed to load cached news", e)
+      }
+
       // Fetch news from both Finnhub and Alpha Vantage in parallel
       const [finnhubNews, alphaNews] = await Promise.all([
         finnhubService.getLatestNews().catch(err => {
@@ -107,18 +119,50 @@ export function DashboardProvider({ children }) {
         })
       ])
 
-      // Merge results
-      let merged = [...(finnhubNews || []), ...(alphaNews || [])]
+      // Merge API results
+      let apiNews = [...(finnhubNews || []), ...(alphaNews || [])]
 
-      // Fallback if no news fetched at all
-      if (merged.length === 0) {
-        merged = INITIAL_NEWS
-      } else {
-        // Sort chronologically descending
-        merged.sort((a, b) => new Date(b.date) - new Date(a.date))
+      // Combine INITIAL_NEWS, cached news, and API news, deduplicating by headline.
+      // 1. Start with INITIAL_NEWS so simulated news items are always present.
+      const mergedMap = new Map()
+      INITIAL_NEWS.forEach(item => mergedMap.set(item.headline, item))
+      
+      // 2. Overwrite or add cached news (maintaining prior analyses/briefings on those news).
+      cachedNews.forEach(item => mergedMap.set(item.headline, item))
+      
+      // 3. Add newly fetched API news if not already present.
+      apiNews.forEach(item => {
+        if (!mergedMap.has(item.headline)) {
+          mergedMap.set(item.headline, item)
+        }
+      })
+
+      let merged = Array.from(mergedMap.values())
+
+      // Sort chronologically descending
+      merged.sort((a, b) => new Date(b.date) - new Date(a.date))
+
+      // Pre-populate with cached analyses where available
+      try {
+        const cacheKey = 'scale_agents_news_cache'
+        const currentCache = JSON.parse(localStorage.getItem(cacheKey) || '{}')
+        merged = merged.map(item => {
+          if (currentCache[item.headline]) {
+            return { ...item, ...currentCache[item.headline] }
+          }
+          return item
+        })
+      } catch (e) {
+        console.error("Failed to apply news analysis cache:", e)
       }
 
       dispatch({ type: 'SET_NEWS', payload: merged })
+      
+      // Save initial merged news list to cache
+      if (merged.length > 0) {
+        localStorage.setItem(NEWS_STORAGE_KEY, JSON.stringify(merged))
+      }
+
       dispatch({ type: 'SET_NEWS_LOADING', payload: false })
       
       if (merged.length > 0) {
@@ -128,7 +172,14 @@ export function DashboardProvider({ children }) {
     loadInitialNews()
   }, [])
 
-  // 2. LocalStorage Briefing Sync
+  // 2. Reactively Sync all state.news updates to LocalStorage (e.g. after simulation or AI analysis)
+  useEffect(() => {
+    if (state.news.length > 0) {
+      localStorage.setItem(NEWS_STORAGE_KEY, JSON.stringify(state.news))
+    }
+  }, [state.news])
+
+  // 3. LocalStorage Briefing Sync
   useEffect(() => {
     const storedBriefs = localStorage.getItem(LOCAL_STORAGE_KEY)
     if (storedBriefs) {
@@ -153,6 +204,22 @@ export function DashboardProvider({ children }) {
   useEffect(() => {
     const selectedNewsItem = state.news.find((n) => n.id === state.selectedNewsId)
     if (selectedNewsItem && selectedNewsItem.impact === null) {
+      // First check LocalStorage cache to avoid Gemini call entirely
+      const cacheKey = 'scale_agents_news_cache'
+      try {
+        const currentCache = JSON.parse(localStorage.getItem(cacheKey) || '{}')
+        const cachedAnalysis = currentCache[selectedNewsItem.headline]
+        if (cachedAnalysis) {
+          dispatch({
+            type: 'UPDATE_ANALYSIS',
+            payload: { id: selectedNewsItem.id, analysis: cachedAnalysis },
+          })
+          return
+        }
+      } catch (e) {
+        console.error("Failed to read from news cache:", e)
+      }
+
       const analyzeSelectedNews = async () => {
         dispatch({ type: 'SET_ANALYSIS_LOADING', payload: true })
         try {
@@ -161,6 +228,16 @@ export function DashboardProvider({ children }) {
             selectedNewsItem.summary,
             selectedNewsItem.assets
           )
+
+          // Save to LocalStorage cache
+          try {
+            const currentCache = JSON.parse(localStorage.getItem(cacheKey) || '{}')
+            currentCache[selectedNewsItem.headline] = analysis
+            localStorage.setItem(cacheKey, JSON.stringify(currentCache))
+          } catch (e) {
+            console.error("Failed to save to local storage cache:", e)
+          }
+
           dispatch({
             type: 'UPDATE_ANALYSIS',
             payload: { id: selectedNewsItem.id, analysis },

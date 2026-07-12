@@ -1,10 +1,44 @@
 import React from 'react'
 import { useDashboard } from '../context/DashboardContext'
-import { INITIAL_ASSETS } from '../services/mockData'
+import { INITIAL_ASSETS, getAssetType, getAssetName } from '../services/mockData'
 
 export default function FilterBar() {
-  const { filters, setFilters } = useDashboard()
+  const { news, filters, setFilters } = useDashboard()
   const instrumentTypes = ['Todos', 'Acciones', 'Criptoactivos', 'Instrumentos de crédito', 'Otros']
+
+  const availableAssets = React.useMemo(() => {
+    const newsTickers = new Set()
+    news.forEach(item => {
+      if (item.assets) {
+        item.assets.forEach(symbol => {
+          if (symbol) newsTickers.add(symbol.toUpperCase().trim())
+        })
+      }
+    })
+
+    const list = []
+    
+    // Start with all INITIAL_ASSETS
+    INITIAL_ASSETS.forEach(asset => {
+      list.push({
+        symbol: asset.symbol,
+        name: asset.name,
+        type: asset.type
+      })
+      newsTickers.delete(asset.symbol)
+    })
+
+    // Add any remaining news tickers
+    newsTickers.forEach(symbol => {
+      list.push({
+        symbol: symbol,
+        name: getAssetName(symbol),
+        type: getAssetType(symbol)
+      })
+    })
+
+    return list
+  }, [news])
 
   const handleSearchChange = (e) => {
     setFilters({ searchQuery: e.target.value })
@@ -57,7 +91,7 @@ export default function FilterBar() {
           <label>Activo Específico</label>
           <select value={filters.assetSymbol} onChange={handleAssetChange}>
             <option value="Todos">Todos los activos</option>
-            {INITIAL_ASSETS.filter(
+            {availableAssets.filter(
               (a) => filters.instrumentType === 'Todos' || a.type === filters.instrumentType
             ).map((asset) => (
               <option key={asset.symbol} value={asset.symbol}>
@@ -66,6 +100,7 @@ export default function FilterBar() {
             ))}
           </select>
         </div>
+
 
         <div className="filter-group">
           <label>Antigüedad</label>

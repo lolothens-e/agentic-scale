@@ -87,6 +87,58 @@ export const INITIAL_NEWS = [
     confidence: 85,
     explanation: 'Safe-haven assets benefit from uncertainty and currency depreciation risks, attracting conservative retail and central bank capital.',
     evidence: 'Spot gold exchange data and COMEX pricing reports.',
+  },
+  {
+    id: 'news-7',
+    headline: 'Tesla Shares Fluctuate After Q2 Production Adjustments in Berlin Factory',
+    source: 'Bloomberg',
+    date: '2026-06-30T10:00:00Z', // ~12 days ago, tests 30d filter
+    assets: ['TSLA'],
+    summary: 'Tesla modified its production schedules in Europe to integrate new battery pack assembly lines, causing temporary delivery adjustments for Berlin-made Model Ys.',
+    historicalComparison: 'Production pauses for upgrades historically create short-term delivery drop worries, resulting in -3% corrections followed by strong rallies.',
+    impact: 'Neutral',
+    confidence: 70,
+    explanation: 'Temporary operational shutdowns are priced in by analysts but trigger automated retail selling. Long-term capacity increases offset short-term delays.',
+    evidence: 'Berlin factory newsletter and regional supplier delivery logs.',
+  },
+  {
+    id: 'news-8',
+    headline: 'Ethereum Layer-2 Network Activity Surges to Record Transactions',
+    source: 'Reuters',
+    date: '2026-06-01T15:00:00Z', // ~40 days ago, tests Todos (older than 30d) filter
+    assets: ['ETH'],
+    summary: 'Aggregated transaction volumes across major Ethereum rollup networks reached an all-time high of 140 transactions per second, reducing average gas fees.',
+    historicalComparison: 'Layer-2 activity spikes precede ether accumulation by gas-paying decentralized application routers by 10 to 15 days.',
+    impact: 'Positivo',
+    confidence: 85,
+    explanation: 'Surging usage shows high organic demand for the ecosystem. Lower fees attract retail user volumes, reinforcing native network token utility.',
+    evidence: 'On-chain explorer metrics and layer-2 gas usage tracker dashboards.',
+  },
+  {
+    id: 'news-9',
+    headline: 'US Corporate Bond Issuance Slows Down Following Yield Hikes',
+    source: 'Financial Times',
+    date: '2026-06-25T11:00:00Z', // ~17 days ago, tests 30d filter (credit type)
+    assets: ['LQD'],
+    summary: 'High-grade corporate borrowers delayed major bond sales as corporate yield spreads expanded, waiting for a more stable macroeconomic environment.',
+    historicalComparison: 'Bond issuance slowdowns correlate with brief increases in index bond ETF values due to reduced new debt supply in secondary markets.',
+    impact: 'Negativo',
+    confidence: 78,
+    explanation: 'Higher yields increase corporate borrowing costs, signaling potential margin squeeze for heavy debt issuers but stabilizing cash-rich corporate values.',
+    evidence: 'SEC debt registration filings compiled by major fixed-income trading platforms.',
+  },
+  {
+    id: 'news-10',
+    headline: 'Central Banks Accelerate Gold Purchases for Reserve Diversification',
+    source: 'Financial Times',
+    date: '2026-05-15T09:00:00Z', // ~57 days ago, tests Todos (older than 30d) filter (Otros type)
+    assets: ['GLD'],
+    summary: 'Global monetary authorities increased gold bar accumulations by 15% year-on-year, citing inflation hedging and geopolitical asset protection strategy.',
+    historicalComparison: 'Central bank net buying has historically supported a solid price floor for gold futures, leading to 12-month gains of over +8.5%.',
+    impact: 'Positivo',
+    confidence: 92,
+    explanation: 'Sustained institutional buying takes physical supply off the market, reinforcing gold as the ultimate store of value during times of currency volatility.',
+    evidence: 'World Gold Council quarterly reserves report and IMF purchase registries.',
   }
 ]
 
@@ -114,3 +166,32 @@ export const INITIAL_BRIEFINGS = [
     alertCreated: true,
   },
 ]
+
+export function getAssetType(symbol) {
+  if (!symbol) return 'Otros'
+  const cleanSymbol = symbol.toUpperCase().trim()
+  const asset = INITIAL_ASSETS.find(a => a.symbol === cleanSymbol)
+  if (asset) return asset.type
+
+  // Heuristics for unknown tickers
+  if (['BTC', 'ETH', 'SOL', 'ADA', 'XRP', 'DOT', 'DOGE', 'SHIB', 'LTC', 'LINK', 'UNI', 'MATIC', 'USDT', 'USDC'].includes(cleanSymbol)) {
+    return 'Criptoactivos'
+  }
+  if (['US10Y', 'US30Y', 'US2Y', 'LQD', 'TLT', 'IEF', 'SHY', 'BND', 'HYG'].includes(cleanSymbol)) {
+    return 'Instrumentos de crédito'
+  }
+  if (['GLD', 'SLV', 'USO', 'UNG', 'IAU', 'DBA', 'USCI'].includes(cleanSymbol)) {
+    return 'Otros'
+  }
+  // Default for general stocks
+  return 'Acciones'
+}
+
+export function getAssetName(symbol) {
+  if (!symbol) return 'Activo'
+  const cleanSymbol = symbol.toUpperCase().trim()
+  const asset = INITIAL_ASSETS.find(a => a.symbol === cleanSymbol)
+  if (asset) return asset.name
+  return `Activo ${cleanSymbol}`
+}
+
