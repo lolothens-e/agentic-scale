@@ -91,12 +91,14 @@ Implementa un patrón de proveedor de estado (`useContext`) gobernado por un `us
 
 ### A. Columna 1: Radar de Noticias
 - **[`FilterBar.jsx`](file:///c:/Users/DIEGO/Documents/GitHub/agentic-scale/src/components/FilterBar.jsx)**: Cuadro de búsqueda de texto reactivo y selectores para aislar noticias por tipo de instrumento (acciones, cripto, crédito) o ticker específico, así como un filtro temporal (24 horas, 7 días, 30 días).
-- **[`NewsCard.jsx`](file:///c:/Users/DIEGO/Documents/GitHub/agentic-scale/src/components/NewsCard.jsx)**: Tarjeta individual para mostrar el titular, la fuente original de la noticia, la fecha y etiquetas dinámicas con los tickers. Cambia sus bordes dinámicamente si está seleccionada.
+- **[`NewsCard.jsx`](file:///c:/Users/DIEGO/Documents/GitHub/agentic-scale/src/components/NewsCard.jsx)**: Tarjeta individual para mostrar el titular, la fuente original de la noticia, la fecha y etiquetas dinámicas con los tickers.
+  - *Interactividad Añadida*: Las etiquetas de los tickers son ahora **click-filtrables** (`.click-filterable`). Al hacer clic en una de ellas, el dashboard completo se filtra automáticamente para ese activo en particular.
 - **[`NewsSidebar.jsx`](file:///c:/Users/DIEGO/Documents/GitHub/agentic-scale/src/components/NewsSidebar.jsx)**: Contenedor lateral encargado de aplicar las combinaciones de filtros en memoria al array de noticias global.
 
 ### B. Columna 2: Señal de Impacto Explicable
 - **[`ImpactBadge.jsx`](file:///c:/Users/DIEGO/Documents/GitHub/agentic-scale/src/components/ImpactBadge.jsx)**: Renderiza las métricas clave de la IA. Cambia de color según la dirección: verde esmeralda para bullish (`Positivo`), rojo suave para bearish (`Negativo`), y ámbar para `Neutral` e `Incierto`.
-- **[`PriceComparison.jsx`](file:///c:/Users/DIEGO/Documents/GitHub/agentic-scale/src/components/PriceComparison.jsx)**: Muestra el comportamiento histórico similar detectado en bases de datos o estimado por el LLM.
+- **[`PriceComparison.jsx`](file:///c:/Users/DIEGO/Documents/GitHub/agentic-scale/src/components/PriceComparison.jsx)**: Muestra la comparativa de comportamiento de mercado histórica y proyectada.
+  - *Interactividad Visual*: Incorpora un **gráfico de tendencias dinámico mediante SVG** que traza una curva de rendimiento de 5 días (`T-2` a `T+2` días). La dirección de la curva (alcista, bajista o lateral) y el color de sombreado y brillo se adaptan instantáneamente según el impacto estimado por la IA.
 - **[`LegalDisclaimer.jsx`](file:///c:/Users/DIEGO/Documents/GitHub/agentic-scale/src/components/LegalDisclaimer.jsx)**: Descargo de riesgo legal estático visible obligatoriamente en pantalla.
 - **[`ImpactDetail.jsx`](file:///c:/Users/DIEGO/Documents/GitHub/agentic-scale/src/components/ImpactDetail.jsx)**: Panel central que visualiza el resumen, la justificación de la IA y los datos de respaldo de la noticia activa.
   - *UX Mejorada*: Cuando se está ejecutando la llamada de análisis a Gemini, este componente sustituye el contenido por una interfaz animada de **Skeleton Loaders** de carga.
@@ -123,6 +125,9 @@ Se agregaron al final del archivo CSS de estilos globales las siguientes reglas 
 - **Spinners y Estados**:
   - Spinner rotativo de carga `.spinner` utilizando fotogramas clave `@keyframes spin`.
   - Clases especiales para el badge `.pending-analysis` en tonos amarillos suaves.
+- **Estilos del Gráfico SVG e Interacción de Tickers**:
+  - `.trend-chart-container` y `.trend-svg`: Maquetan el fondo translúcido y la escala del gráfico de líneas SVG.
+  - `.click-filterable`: Define transiciones suaves de color y transforma el puntero a cursor interactivo en las etiquetas.
 
 ---
 

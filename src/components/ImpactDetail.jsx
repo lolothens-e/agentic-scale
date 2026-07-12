@@ -82,7 +82,10 @@ export default function ImpactDetail() {
               <p>{selectedNews.summary}</p>
             </div>
 
-            <PriceComparison historicalComparison={selectedNews.historicalComparison} />
+            <PriceComparison 
+              impact={selectedNews.impact} 
+              historicalComparison={selectedNews.historicalComparison} 
+            />
 
             <div className="detail-group">
               <h3>Explicación de la Señal (Evidencia)</h3>

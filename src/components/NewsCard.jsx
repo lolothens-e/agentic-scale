@@ -3,7 +3,7 @@ import { useDashboard } from '../context/DashboardContext'
 import { INITIAL_ASSETS } from '../services/mockData'
 
 export default function NewsCard({ item }) {
-  const { selectedNewsId, selectNews } = useDashboard()
+  const { selectedNewsId, selectNews, setFilters } = useDashboard()
   const isSelected = item.id === selectedNewsId
   
   const impactClass = item.impact 
@@ -42,7 +42,15 @@ export default function NewsCard({ item }) {
           const assetObj = INITIAL_ASSETS.find((a) => a.symbol === symbol)
           const assetType = assetObj ? assetObj.type : 'Activo'
           return (
-            <span key={symbol} className="asset-tag" title={assetType}>
+            <span 
+              key={symbol} 
+              className="asset-tag click-filterable" 
+              title={assetType}
+              onClick={(e) => {
+                e.stopPropagation()
+                setFilters({ assetSymbol: symbol })
+              }}
+            >
               {symbol}
             </span>
           )
