@@ -179,15 +179,15 @@ export function DashboardProvider({ children }) {
     const assetSymbol = item.assets[0] || 'GEN'
     const newBrief = {
       id: `brief-${Date.now()}`,
-      watchlist: `Análisis Especial (${assetSymbol})`,
+      watchlist: item.watchlist || `Análisis Especial (${assetSymbol})`,
       targetAsset: assetSymbol,
       newsHeadline: item.headline,
-      associatedMovement: item.impact 
+      associatedMovement: item.associatedMovement || (item.impact 
         ? `Impacto ${item.impact} proyectado con confianza del ${item.confidence}%` 
-        : 'Analizando impacto...',
-      suggestedAction: item.explanation 
+        : 'Analizando impacto...'),
+      suggestedAction: item.suggestedAction || (item.explanation 
         ? `Investigar señal: ${item.explanation.substring(0, 100)}...` 
-        : 'Investigar señal de impacto.',
+        : 'Investigar señal de impacto.'),
       status: 'Pendiente',
       justification: '',
       alertCreated: false,

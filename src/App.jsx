@@ -18,6 +18,9 @@ function AppContent() {
     historicalComparison: '',
     explanation: '',
     evidence: '',
+    watchlist: '',
+    associatedMovement: '',
+    suggestedAction: '',
   })
 
   const handleCreateNews = (e) => {
@@ -39,6 +42,9 @@ function AppContent() {
       confidence: parseInt(newNewsForm.confidence) || 80,
       explanation: newNewsForm.explanation || '',
       evidence: newNewsForm.evidence || '',
+      watchlist: newNewsForm.watchlist || '',
+      associatedMovement: newNewsForm.associatedMovement || '',
+      suggestedAction: newNewsForm.suggestedAction || '',
     }
 
     addNewsItem(newEntry)
@@ -56,6 +62,9 @@ function AppContent() {
       historicalComparison: '',
       explanation: '',
       evidence: '',
+      watchlist: '',
+      associatedMovement: '',
+      suggestedAction: '',
     })
   }
 
@@ -185,6 +194,37 @@ function AppContent() {
                   placeholder="Evidencia de mercado e hipótesis detrás del impacto..."
                   value={newNewsForm.explanation}
                   onChange={(e) => setNewNewsForm({ ...newNewsForm, explanation: e.target.value })}
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Watchlist Destino (Opcional)</label>
+                  <input
+                    type="text"
+                    placeholder="ej. Renta Fija / Crédito"
+                    value={newNewsForm.watchlist}
+                    onChange={(e) => setNewNewsForm({ ...newNewsForm, watchlist: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Movimiento Estimado (Opcional)</label>
+                  <input
+                    type="text"
+                    placeholder="ej. Corrección de -3% a -5%"
+                    value={newNewsForm.associatedMovement}
+                    onChange={(e) => setNewNewsForm({ ...newNewsForm, associatedMovement: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Acción de Investigación Sugerida (Opcional)</label>
+                <input
+                  type="text"
+                  placeholder="ej. Comprar en retrocesos técnicos..."
+                  value={newNewsForm.suggestedAction}
+                  onChange={(e) => setNewNewsForm({ ...newNewsForm, suggestedAction: e.target.value })}
                 />
               </div>
 

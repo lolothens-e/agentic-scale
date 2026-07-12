@@ -69,12 +69,29 @@ export default function FilterBar() {
 
         <div className="filter-group">
           <label>Antigüedad</label>
-          <select value={filters.recency} onChange={handleRecencyChange}>
-            <option value="Todos">Cualquier fecha</option>
-            <option value="24h">Últimas 24 horas</option>
-            <option value="7d">Últimos 7 días</option>
-            <option value="30d">Últimos 30 días</option>
-          </select>
+          <div className="radio-pill-group">
+            {[
+              { label: 'Todos', value: 'Todos' },
+              { label: '24h', value: '24h' },
+              { label: '7d', value: '7d' },
+              { label: '30d', value: '30d' }
+            ].map((option) => (
+              <label 
+                key={option.value} 
+                className={`radio-pill-label ${filters.recency === option.value ? 'active' : ''}`}
+              >
+                <input
+                  type="radio"
+                  name="recency"
+                  value={option.value}
+                  checked={filters.recency === option.value}
+                  onChange={handleRecencyChange}
+                  className="radio-pill-input"
+                />
+                {option.label}
+              </label>
+            ))}
+          </div>
         </div>
       </div>
     </div>

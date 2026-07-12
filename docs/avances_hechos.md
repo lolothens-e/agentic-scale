@@ -59,7 +59,10 @@ Conecta el panel al modelo de lenguaje **Gemini 2.5 Flash** para generar explica
   - `explanation`: Descripción lógica del mecanismo de transmisión de mercado.
   - `evidence`: Datos, citas o métricas presentes en la noticia que respaldan la tesis.
   - `historicalComparison`: Correlaciones del pasado y precedentes estadísticos.
-- **Simulador Heurístico Inteligente**: En ausencia de la API key `VITE_GEMINI_API_KEY`, el servicio ejecuta una clasificación heurística analizando el texto en busca de palabras clave bajistas (ej. *drop*, *fall*, *ban*, *limit*) y alcistas (ej. *beat*, *rally*, *gain*, *inflow*), construyendo respuestas de análisis realistas y personalizadas para cada ticker a fin de asegurar la demostración offline del flujo de IA.
+  - `watchlist`: Nombre de la lista de seguimiento sugerida (ej. 'Tecnología y Crecimiento', 'Activos Digitales').
+  - `associatedMovement`: Proyección técnica de precio a corto plazo.
+  - `suggestedAction`: Recomendación de acción inmediata para el analista.
+- **Simulador Heurístico Inteligente**: En ausencia de la API key `VITE_GEMINI_API_KEY`, el servicio ejecuta una clasificación heurística analizando el texto en busca de palabras clave bajistas (ej. *drop*, *fall*, *ban*, *limit*) y alcistas (ej. *beat*, *rally*, *gain*, *inflow*), construyendo respuestas de análisis realistas y personalizadas (incluyendo watchlists, acciones sugeridas y movimientos estimados) para cada ticker a fin de asegurar la demostración offline del flujo de IA.
 
 ---
 
@@ -90,7 +93,8 @@ Implementa un patrón de proveedor de estado (`useContext`) gobernado por un `us
 ## 4. Componentes UI Creados (`src/components/`)
 
 ### A. Columna 1: Radar de Noticias
-- **[`FilterBar.jsx`](file:///c:/Users/DIEGO/Documents/GitHub/agentic-scale/src/components/FilterBar.jsx)**: Cuadro de búsqueda de texto reactivo y selectores para aislar noticias por tipo de instrumento (acciones, cripto, crédito) o ticker específico, así como un filtro temporal (24 horas, 7 días, 30 días).
+- **[`FilterBar.jsx`](file:///c:/Users/DIEGO/Documents/GitHub/agentic-scale/src/components/FilterBar.jsx)**: Cuadro de búsqueda de texto reactivo y selectores para aislar noticias por tipo de instrumento (acciones, cripto, crédito) o ticker específico.
+  - *Filtro de Antigüedad Dinámico*: Se reemplazó el selector dropdown por un **diseño de botones de radio de tipo píldora** (`radio-pill-group`), permitiendo al usuario seleccionar temporalidades rápidamente con retroalimentación visual directa (activo/inactivo).
 - **[`NewsCard.jsx`](file:///c:/Users/DIEGO/Documents/GitHub/agentic-scale/src/components/NewsCard.jsx)**: Tarjeta individual para mostrar el titular, la fuente original de la noticia, la fecha y etiquetas dinámicas con los tickers.
   - *Interactividad Añadida*: Las etiquetas de los tickers son ahora **click-filtrables** (`.click-filterable`). Al hacer clic en una de ellas, el dashboard completo se filtra automáticamente para ese activo en particular.
 - **[`NewsSidebar.jsx`](file:///c:/Users/DIEGO/Documents/GitHub/agentic-scale/src/components/NewsSidebar.jsx)**: Contenedor lateral encargado de aplicar las combinaciones de filtros en memoria al array de noticias global.
