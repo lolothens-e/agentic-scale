@@ -1,61 +1,69 @@
-import { INITIAL_NEWS } from './mockData'
-
-const API_KEY = import.meta.env.VITE_FINNHUB_API_KEY
+const API_KEY = import.meta.env.VITE_CURRENTS_API_KEY
 const USE_MOCK = !API_KEY || API_KEY.includes('your_') || API_KEY.trim() === ''
 
-export const finnhubService = {
+const CURRENTS_BASE_URL = 'https://api.currentsapi.services/v2'
+
+const WATCHED_ASSETS = [
+  { symbol: 'NVDA', name: 'NVIDIA' },
+  { symbol: 'TSLA', name: 'Tesla' },
+  { symbol: 'AAPL', name: 'Apple' },
+  { symbol: 'BTC', name: 'Bitcoin' },
+  { symbol: 'ETH', name: 'Ethereum' },
+  { symbol: 'US10Y', name: 'US Treasury bonds' },
+  { symbol: 'LQD', name: 'corporate bonds' },
+  { symbol: 'GLD', name: 'Gold price' },
+]
+
+async function searchOneAsset(asset) {
+  const params = new URLSearchParams({
+    keywords: asset.name,
+    language: 'en',
+    page_size: '5',
+    apiKey: API_KEY,
+  })
+
+  const response = await fetch(`${CURRENTS_BASE_URL}/search?${params.toString()}`)
+  if (!response.ok) {
+    throw new Error(`Currents API returned status ${response.status} for ${asset.symbol}`)
+  }
+  const data = await response.json()
+  const articles = data.news || []
+
+  return articles.map((item) => ({
+    id: `currents-${item.id}`,
+    headline: item.title,
+    source: item.author || 'Currents',
+    date: item.published,
+    assets: [asset.symbol],
+    summary: item.description || 'No details provided.',
+    impact: null,
+    confidence: null,
+    explanation: null,
+    evidence: item.url || null,
+    historicalComparison: null,
+  }))
+}
+
+export const currentsService = {
   getLatestNews: async () => {
     if (USE_MOCK) {
-      console.warn("Finnhub API key is not configured or uses placeholder. Falling back to local mock news.")
-      // Return local mock news data with realistic delay
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve(INITIAL_NEWS)
-        }, 800)
-      })
+      console.warn("Currents API key is not configured or uses placeholder. Skipping Currents source.")
+      return []
     }
 
     try {
-      // Finnhub General Market News API
-      const response = await fetch(`https://finnhub.io/api/v1/news?category=general&token=${API_KEY}`)
-      if (!response.ok) {
-        throw new Error(`Finnhub API returned status ${response.status}`)
-      }
-      const data = await response.json()
-      
-      if (!Array.isArray(data) || data.length === 0) {
-        return INITIAL_NEWS
-      }
-
-      // Map to standard internal format
-      // Note: Finnhub returns timestamps in seconds, we need milliseconds
-      // related is a single ticker. Let's make sure it is in an array if present.
-      return data.map((item) => {
-        const assets = []
-        if (item.related) {
-          // split related by comma or spaces just in case, clean up
-          const symbols = item.related.split(/[\s,]+/).map(s => s.trim().toUpperCase()).filter(Boolean)
-          assets.push(...symbols)
-        }
-
-        return {
-          id: `finnhub-${item.id}`,
-          headline: item.headline,
-          source: item.source || 'Finnhub',
-          date: new Date(item.datetime * 1000).toISOString(),
-          assets: assets,
-          summary: item.summary || 'No details provided.',
-          // These AI properties will be generated when user selects/analyzes the news
-          impact: null, 
-          confidence: null,
-          explanation: null,
-          evidence: null,
-          historicalComparison: null,
-        }
-      })
+      const results = await Promise.all(
+        WATCHED_ASSETS.map((asset) =>
+          searchOneAsset(asset).catch((err) => {
+            console.error(`Currents request failed for ${asset.symbol}:`, err)
+            return []
+          })
+        )
+      )
+      return results.flat()
     } catch (error) {
-      console.error("Finnhub API request failed, using local mock news fallback:", error)
-      return INITIAL_NEWS
+      console.error("Currents API request failed entirely, returning empty list:", error)
+      return []
     }
   }
 }

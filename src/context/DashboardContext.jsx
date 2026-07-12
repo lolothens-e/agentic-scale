@@ -155,7 +155,6 @@ export function DashboardProvider({ children }) {
 
       // Merge API results
       let apiNews = [...(finnhubNews || []), ...(alphaNews || []), ...(currentsNews || [])]
-
       // Combine INITIAL_NEWS, cached news, and API news, deduplicating by headline.
       // 1. Start with INITIAL_NEWS so simulated news items are always present.
       const mergedMap = new Map()
