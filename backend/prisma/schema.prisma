@@ -1,0 +1,91 @@
+// Esquema de base de datos relacional (PostgreSQL) para el Radar de Noticias (H.U. 1).
+//
+// Modelo relacional:
+//   Instrumento  1 --- N  NoticiaInstrumento  N --- 1  Noticia
+//
+// La tabla puente `NoticiaInstrumento` materializa la relación muchos-a-muchos:
+// una noticia puede mencionar varios activos (ej. una nota sobre política monetaria
+// puede etiquetar US10Y, DXY y varios ETFs), y un mismo activo aparece en muchas noticias.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Tipos de instrumento usados por el filtro `instrument_type` de la HU1.
+enum InstrumentoTipo {
+  ACCION
+  CRIPTOACTIVO
+  CREDITO
+  OTRO
+}
+
+/// Fuente externa desde la que se ingesta una noticia/evento.
+enum FuenteDato {
+  FINNHUB
+  QUIVER
+}
+
+model Instrumento {
+  id        Int             @id @default(autoincrement())
+  /// Ticker/símbolo único, ej. "NVDA", "BTC", "US10Y"
+  ticker    String          @unique @db.VarChar(20)
+  nombre    String?         @db.VarChar(120)
+  tipo      InstrumentoTipo
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
+
+  noticias NoticiaInstrumento[]
+
+  // Acelera el filtro `?instrument_type=` y las búsquedas por `?asset=`
+  @@index([tipo])
+  @@map("instrumentos")
+}
+
+model Noticia {
+  id     Int    @id @default(autoincrement())
+  titulo String @db.VarChar(500)
+  resumen String? @db.Text
+  url    String @db.VarChar(1000)
+
+  /// Fuente que originó el registro (Finnhub, Quiver, ...)
+  fuente FuenteDato @map("fuente")
+  /// Identificador del registro en la fuente original, para upserts idempotentes.
+  fuenteId String? @map("fuente_id") @db.VarChar(120)
+
+  /// Fecha del evento/noticia (no de la ingesta). Es el campo usado por `?days_ago=`.
+  fecha        DateTime @map("fecha")
+  /// Momento en que nuestro pipeline la insertó (auditoría).
+  fechaIngesta DateTime @default(now()) @map("fecha_ingesta")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  instrumentos NoticiaInstrumento[]
+
+  // Un mismo registro externo no debe duplicarse al reconsumir la fuente.
+  @@unique([fuente, fuenteId], name: "fuente_fuenteId_unique")
+  // Acelera el filtro `?days_ago=` (rango de fechas) y el ORDER BY fecha DESC.
+  @@index([fecha])
+  @@map("noticias")
+}
+
+/// Tabla puente de la relación muchos-a-muchos Noticia <-> Instrumento.
+model NoticiaInstrumento {
+  noticiaId     Int @map("noticia_id")
+  instrumentoId Int @map("instrumento_id")
+
+  noticia     Noticia     @relation(fields: [noticiaId], references: [id], onDelete: Cascade)
+  instrumento Instrumento @relation(fields: [instrumentoId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@id([noticiaId, instrumentoId])
+  // Acelera "traer todas las noticias de un instrumento" en el sentido inverso.
+  @@index([instrumentoId])
+  @@map("noticias_instrumentos")
+}
