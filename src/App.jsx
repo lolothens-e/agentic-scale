@@ -8,7 +8,7 @@ import BriefingPanel from './components/BriefingPanel'
 import './App.css'
 
 function AppContent() {
-  const { addNewsItem, selectNews, supabaseOnline } = useDashboard()
+  const { addNewsItem, selectNews } = useDashboard()
   const [showAddNewsModal, setShowAddNewsModal] = useState(false)
   const [newNewsForm, setNewNewsForm] = useState({
     headline: '',
@@ -73,13 +73,9 @@ function AppContent() {
     <div className="dashboard-container">
       <header className="main-header">
         <div className="brand">
-          <div className="logo-icon">▲</div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <h1>ScaleAgents</h1>
-              <span className={`db-status-badge ${supabaseOnline ? 'online' : 'offline'}`} title={supabaseOnline ? "Supabase PostgreSQL Conectado" : "Usando LocalStorage Local"}>
-                <span className="dot">●</span> {supabaseOnline ? 'Supabase Online' : 'Modo Local'}
-              </span>
             </div>
             <p className="subtitle">Track 5: Inteligencia de Mercado y Recomendaciones Financieras</p>
           </div>
