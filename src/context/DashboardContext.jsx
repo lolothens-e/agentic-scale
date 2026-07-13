@@ -225,12 +225,12 @@ export function DashboardProvider({ children }) {
   // 3. Briefing Loading — Firestore first, localStorage fallback
   useEffect(() => {
     const initBriefings = async () => {
-      const firestoreBriefings = await loadBriefings()
+      const supabaseBriefings = await loadBriefings()
 
-      if (firestoreBriefings && firestoreBriefings.length > 0) {
-        dispatch({ type: 'SET_BRIEFINGS', payload: firestoreBriefings })
+      if (supabaseBriefings && supabaseBriefings.length > 0) {
+        dispatch({ type: 'SET_BRIEFINGS', payload: supabaseBriefings })
         // Also sync to localStorage as offline backup
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(firestoreBriefings))
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(supabaseBriefings))
       } else {
         // Fallback to localStorage
         const storedBriefs = localStorage.getItem(LOCAL_STORAGE_KEY)
@@ -238,7 +238,7 @@ export function DashboardProvider({ children }) {
           try {
             const parsed = JSON.parse(storedBriefs)
             dispatch({ type: 'SET_BRIEFINGS', payload: parsed })
-            // Backfill Firestore with localStorage data
+            // Backfill Supabase with localStorage data
             parsed.forEach((b) => saveBriefing(b))
           } catch (e) {
             console.error("Failed to parse briefings from localStorage", e)
@@ -246,7 +246,7 @@ export function DashboardProvider({ children }) {
           }
         } else {
           dispatch({ type: 'SET_BRIEFINGS', payload: INITIAL_BRIEFINGS })
-          // Seed Firestore with initial briefings
+          // Seed Supabase with initial briefings
           INITIAL_BRIEFINGS.forEach((b) => saveBriefing(b))
         }
       }
@@ -268,11 +268,11 @@ export function DashboardProvider({ children }) {
         { name: 'Tecnología', assets: ['NVDA', 'TSLA', 'AAPL'] },
         { name: 'Cripto & Oro', assets: ['BTC', 'ETH', 'GLD'] }
       ]
-      const firestoreWatchlists = await loadWatchlists()
+      const supabaseWatchlists = await loadWatchlists()
 
-      if (firestoreWatchlists && firestoreWatchlists.length > 0) {
-        dispatch({ type: 'SET_WATCHLISTS', payload: firestoreWatchlists })
-        localStorage.setItem(WATCHLISTS_STORAGE_KEY, JSON.stringify(firestoreWatchlists))
+      if (supabaseWatchlists && supabaseWatchlists.length > 0) {
+        dispatch({ type: 'SET_WATCHLISTS', payload: supabaseWatchlists })
+        localStorage.setItem(WATCHLISTS_STORAGE_KEY, JSON.stringify(supabaseWatchlists))
       } else {
         const storedWatchlists = localStorage.getItem(WATCHLISTS_STORAGE_KEY)
         if (storedWatchlists) {
@@ -381,13 +381,13 @@ export function DashboardProvider({ children }) {
 
   const updateBriefingStatus = (id, status) => {
     dispatch({ type: 'UPDATE_BRIEFING_STATUS', payload: { id, status } })
-    // Sync to Firestore
+    // Sync to Supabase
     updateBriefingField(id, 'status', status)
   }
 
   const updateBriefingJustification = (id, justification) => {
     dispatch({ type: 'UPDATE_BRIEFING_JUSTIFICATION', payload: { id, justification } })
-    // Sync to Firestore
+    // Sync to Supabase
     updateBriefingField(id, 'justification', justification)
   }
 
@@ -403,10 +403,15 @@ export function DashboardProvider({ children }) {
   const createBriefing = (newsId) => {
     const item = state.news.find((n) => n.id === newsId)
     if (!item) return
+    
+    // Prevent duplicates
+    if (state.briefings.find(b => b.newsHeadline === item.headline)) {
+      return
+    }
 
     const assetSymbol = item.assets[0] || 'GEN'
     const newBrief = {
-      id: `brief-${Date.now()}`,
+      id: crypto.randomUUID(),
       watchlist: item.watchlist || `Análisis Especial (${assetSymbol})`,
       targetAsset: assetSymbol,
       newsHeadline: item.headline,
@@ -443,7 +448,7 @@ export function DashboardProvider({ children }) {
       if (existingHeadlines.has(item.headline)) return
       const assetSymbol = item.assets[0] || 'GEN'
       const newBrief = {
-        id: `brief-wl-${Date.now()}-${assetSymbol}`,
+        id: crypto.randomUUID(),
         watchlist: `Lista: ${state.activeWatchlist}`,
         targetAsset: assetSymbol,
         newsHeadline: item.headline,
@@ -470,13 +475,13 @@ export function DashboardProvider({ children }) {
 
   const addWatchlist = (watchlistObj) => {
     dispatch({ type: 'ADD_WATCHLIST', payload: watchlistObj })
-    // Persist to Firestore
+    // Persist to Supabase
     saveWatchlist(watchlistObj)
   }
 
   const deleteWatchlist = (name) => {
     dispatch({ type: 'DELETE_WATCHLIST', payload: name })
-    // Delete from Firestore
+    // Delete from Supabase
     deleteWatchlistDoc(name)
   }
 

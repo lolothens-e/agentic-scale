@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useDashboard } from '../context/DashboardContext'
 import StatusSelector from './StatusSelector'
 import JustificationInput from './JustificationInput'
@@ -8,12 +8,27 @@ export default function BriefingCard({ brief }) {
   const { updateBriefingStatus, updateBriefingJustification, toggleAlert } = useDashboard()
   const [toastMsg, setToastMsg] = useState('')
 
+  const [localJustification, setLocalJustification] = useState(brief.justification)
+
+  useEffect(() => {
+    setLocalJustification(brief.justification)
+  }, [brief.justification])
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (localJustification !== brief.justification) {
+        updateBriefingJustification(brief.id, localJustification)
+      }
+    }, 500)
+    return () => clearTimeout(handler)
+  }, [localJustification, brief.id, brief.justification, updateBriefingJustification])
+
   const handleStatusChange = (newStatus) => {
     updateBriefingStatus(brief.id, newStatus)
   }
 
   const handleJustificationChange = (text) => {
-    updateBriefingJustification(brief.id, text)
+    setLocalJustification(text)
   }
 
   const handleAlertTrigger = () => {
@@ -53,7 +68,7 @@ export default function BriefingCard({ brief }) {
       </div>
 
       <JustificationInput
-        value={brief.justification}
+        value={localJustification}
         onChange={handleJustificationChange}
       />
 

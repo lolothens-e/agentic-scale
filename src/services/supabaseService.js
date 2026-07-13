@@ -106,11 +106,11 @@ export async function saveBriefing(briefing, newsItemContext) {
       type: 'Otros'
     }, { onConflict: 'symbol' })
 
-    // Insert briefing
-    // We ignore briefing.id because Supabase generates a UUID
+    // We use briefing.id to ensure upsert matches the frontend's UUID
     const { error } = await supabase
       .from('briefings')
-      .insert({
+      .upsert({
+        id: briefing.id,
         news_id: newsId,
         target_asset: briefing.targetAsset,
         watchlist_label: briefing.watchlist,
@@ -119,7 +119,7 @@ export async function saveBriefing(briefing, newsItemContext) {
         status: briefing.status || 'Pendiente',
         justification: briefing.justification || '',
         alert_created: briefing.alertCreated || false
-      })
+      }, { onConflict: 'id' })
 
     if (error) throw error
   } catch (error) {
