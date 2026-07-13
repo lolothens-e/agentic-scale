@@ -6,7 +6,8 @@ Este proyecto es un prototipo interactivo desarrollado en 48 horas enfocado en r
 El prototipo opera bajo una arquitectura Frontend orientada a servicios:
 * **Core:** React 18 + Vite para un empaquetado optimizado y renderizado rápido.
 * **Estilos:** CSS Grid responsivo a 3 columnas con un sistema de diseño premium "Dark Mode" para interfaces financieras.
-* **Gestión de Estado:** Manejo centralizado a través de `DashboardContext` y persistencia en memoria local (`useLocalStorageBriefings`).
+* **Gestión de Estado:** Manejo centralizado a través de `DashboardContext`.
+* **Base de Datos:** Esquema relacional estricto en la nube utilizando Supabase (PostgreSQL) con operaciones CRUD abstraídas a través de servicios dedicados.
 * **Servicios Externos:** Integración paralela de APIs financieras (Finnhub, Alpha Vantage, Currents API).
   
 ## Historias de Usuario y Flujo Funcional
@@ -20,8 +21,12 @@ Al seleccionar un evento, el Agente IA evalúa la dirección del mercado (Positi
 ### 3. Briefing de Mercado y Aprobación Humana (HU3)
 El flujo final exige la intervención del analista, quien revisa la propuesta de la IA y clasifica el estado del evento (Pendiente, Revisada, Escalada, Descartada). El sistema requiere una justificación técnica en texto libre y permite la creación de tareas o alertas para el equipo sin ejecutar operaciones comerciales directas.
 
-## Proyección de Base de Datos
-Actualmente el prototipo utiliza almacenamiento local para agilizar el desarrollo, pero se ha diseñado una arquitectura relacional (PostgreSQL/Supabase) para su futura migración. El esquema normaliza el catálogo de instrumentos, vincula de forma transaccional las noticias con los activos (`news_assets`) y separa el análisis del Agente IA de los datos crudos para optimizar consultas.
+## Arquitectura de Base de Datos (Supabase / PostgreSQL)
+El proyecto implementa un esquema relacional estricto en la nube para garantizar la integridad referencial de los datos financieros.
+* **Modelo de Datos:** Tablas normalizadas (`assets`, `news`, `news_analysis`, `watchlists`, `briefings`) con restricciones de llaves foráneas (Foreign Keys).
+* **Capa de Abstracción (Servicios):** La comunicación del frontend se realiza mediante un patrón CRUD a través de `supabaseService.js`. El sistema gestiona inserciones transaccionales automáticas (ej. realizar un *upsert* del catálogo de activos antes de vincular un reporte a una noticia).
+* **Caché Inteligente de IA:** Para optimizar costos de procesamiento, el sistema verifica internamente en la base de datos si una noticia ya cuenta con el análisis de Gemini antes de consumir la API externa.
+* **Entorno:** La conexión se inicializa vía `supabaseClient.js` requiriendo credenciales de entorno seguras.
 
 ---
 
@@ -37,3 +42,4 @@ Actualmente el prototipo utiliza almacenamiento local para agilizar el desarroll
 * **Integración Currents API:** Implementación de la API como fuente paralela de noticias en tiempo real con sistema de respaldo (mock fallback) para garantizar disponibilidad.
 * **Construcción de Componentes UI:** Finalización de la estructura de tres columnas (`NewsSidebar`, `ImpactDetail`, `BriefingPanel`) con filtros interactivos, modales de carga tipo "Skeleton" y notificaciones visuales temporales (Toasts).
 * **Esquema de Datos:** Diseño del diagrama de entidad-relación y scripts de migración relacional.
+* **Migración a la Nube (Backend):** Implementación exitosa de Supabase (PostgreSQL) reemplazando la persistencia local. Creación de los servicios de cliente y métodos CRUD para manejar la inserción relacional de noticias, activos y caché de inteligencia artificial.
