@@ -7,9 +7,9 @@ export async function sendAlertNotification(briefing) {
   // If EmailJS is not fully configured, fall back to opening the mailto client
   if (!serviceId || !templateId || !publicKey || serviceId.trim() === '' || serviceId.includes('your_')) {
     console.warn("EmailJS is not fully configured in .env. Opening default mail client as fallback.")
-    
-    const subject = encodeURIComponent(`🚨 ALERTA DE MERCADO ESCALADA: ${briefing.targetAsset}`)
-    const body = encodeURIComponent(`🚨 ALERTA DE MERCADO ESCALADA - ScaleAgents
+
+    const subject = encodeURIComponent(`ALERTA DE MERCADO ESCALADA: ${briefing.targetAsset}`)
+    const body = encodeURIComponent(`ALERTA DE MERCADO ESCALADA - ScaleAgents
 
 Hola, se ha escalado la siguiente señal de mercado para su revisión:
 
@@ -25,7 +25,7 @@ ${briefing.justification || 'Sin justificación provista.'}
 
 Generado el: ${new Date().toLocaleString('es-ES')}
 `)
-    
+
     // Open standard mailto link (works natively in all browsers without CORS)
     window.open(`mailto:${toEmail}?subject=${subject}&body=${body}`, '_blank')
     return
@@ -37,7 +37,7 @@ Generado el: ${new Date().toLocaleString('es-ES')}
     user_id: publicKey,
     template_params: {
       to_email: toEmail,
-      subject: `🚨 ALERTA DE MERCADO ESCALADA: ${briefing.targetAsset}`,
+      subject: `ALERTA DE MERCADO ESCALADA: ${briefing.targetAsset}`,
       headline: briefing.newsHeadline,
       asset: briefing.targetAsset,
       watchlist: briefing.watchlist || 'General',
@@ -56,7 +56,7 @@ Generado el: ${new Date().toLocaleString('es-ES')}
       },
       body: JSON.stringify(payload)
     })
-    
+
     if (response.ok) {
       console.log("Email sent successfully via EmailJS!")
     } else {
