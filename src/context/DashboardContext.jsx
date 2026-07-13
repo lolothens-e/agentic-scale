@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react'
+import React, { createContext, useContext, useReducer, useEffect, useState } from 'react'
 import { finnhubService } from '../services/finnhubService'
 import { alphaService } from '../services/alphaService'
 import { currentsService } from '../services/currentsService'
@@ -14,6 +14,8 @@ import {
   saveWatchlist,
   deleteWatchlistDoc,
 } from '../services/supabaseService'
+import { sendAlertNotification } from '../services/notificationService'
+import { supabase } from '../services/supabaseClient'
 
 const DashboardContext = createContext(null)
 
@@ -130,6 +132,21 @@ function dashboardReducer(state, action) {
 
 export function DashboardProvider({ children }) {
   const [state, dispatch] = useReducer(dashboardReducer, initialState)
+  const [supabaseOnline, setSupabaseOnline] = useState(false)
+
+  useEffect(() => {
+    const checkSupabaseStatus = async () => {
+      try {
+        const { data, error } = await supabase.from('assets').select('symbol').limit(1)
+        if (error) throw error
+        setSupabaseOnline(true)
+      } catch (e) {
+        console.warn("Supabase connection check failed, using LocalStorage fallback:", e)
+        setSupabaseOnline(false)
+      }
+    }
+    checkSupabaseStatus()
+  }, [])
 
   // 1. Initial News Loading with Cache Support
   useEffect(() => {
@@ -383,6 +400,13 @@ export function DashboardProvider({ children }) {
     dispatch({ type: 'UPDATE_BRIEFING_STATUS', payload: { id, status } })
     // Sync to Supabase
     updateBriefingField(id, 'status', status)
+
+    if (status === 'Escalada') {
+      const briefing = state.briefings.find((b) => b.id === id)
+      if (briefing) {
+        sendAlertNotification({ ...briefing, status })
+      }
+    }
   }
 
   const updateBriefingJustification = (id, justification) => {
@@ -393,10 +417,13 @@ export function DashboardProvider({ children }) {
 
   const toggleAlert = (id) => {
     dispatch({ type: 'TOGGLE_ALERT', payload: { id } })
-    // Find the current state and sync the toggled value
     const briefing = state.briefings.find((b) => b.id === id)
     if (briefing) {
-      updateBriefingField(id, 'alertCreated', !briefing.alertCreated)
+      const nextAlertState = !briefing.alertCreated
+      updateBriefingField(id, 'alertCreated', nextAlertState)
+      if (nextAlertState) {
+        sendAlertNotification(briefing)
+      }
     }
   }
 
@@ -489,6 +516,7 @@ export function DashboardProvider({ children }) {
     <DashboardContext.Provider
       value={{
         ...state,
+        supabaseOnline,
         selectNews,
         addNewsItem,
         updateBriefingStatus,

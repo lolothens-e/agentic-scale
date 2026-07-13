@@ -6,14 +6,15 @@ import HistoricalChart from './HistoricalChart'
 import LegalDisclaimer from './LegalDisclaimer'
 
 export default function ImpactDetail() {
-  const { news, selectedNewsId, isLoadingAnalysis, createBriefing, createWatchlistBriefing, activeWatchlist } = useDashboard()
+  const { news, briefings, selectedNewsId, isLoadingAnalysis, createBriefing, createWatchlistBriefing, activeWatchlist } = useDashboard()
 
   const selectedNews = news.find((item) => item.id === selectedNewsId)
 
+  const hasBriefing = selectedNews && briefings.some(b => b.newsHeadline === selectedNews.headline)
+
   const handleGenerateBriefing = () => {
-    if (selectedNews) {
+    if (selectedNews && !hasBriefing) {
       createBriefing(selectedNews.id)
-      // Custom toast notification logic can be triggered, or we let the panel update
     }
   }
 
@@ -49,8 +50,13 @@ export default function ImpactDetail() {
       <div className="section-header">
         <h2>Señal de Impacto Explicable</h2>
         {activeWatchlist === 'Todos' && selectedNews && (
-          <button className="btn-secondary btn-sm" onClick={handleGenerateBriefing}>
-            ⚙️ Generar Briefing
+          <button 
+            className="btn-secondary btn-sm" 
+            onClick={handleGenerateBriefing}
+            disabled={hasBriefing}
+            style={hasBriefing ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
+          >
+            {hasBriefing ? '✓ Briefing Generado' : '⚙️ Generar Briefing'}
           </button>
         )}
         {activeWatchlist !== 'Todos' && (

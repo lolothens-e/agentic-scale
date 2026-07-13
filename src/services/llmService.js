@@ -82,6 +82,69 @@ CRITICAL REQUIREMENT: Respond with a strictly formatted JSON object (no markdown
       console.error("Gemini API call failed, falling back to simulated analysis:", error)
       return getSimulatedAnalysis(headline, summary, assets)
     }
+  },
+
+  generateConsolidatedReport: async (briefings, watchlistName) => {
+    if (USE_MOCK) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve(getSimulatedConsolidatedReport(briefings, watchlistName))
+        }, 1500)
+      })
+    }
+
+    try {
+      const briefingsText = briefings.map((b, i) => `
+Briefing #${i+1}:
+- Activo: ${b.targetAsset}
+- Lista: ${b.watchlist}
+- Titular Noticia: ${b.newsHeadline}
+- Movimiento Proyectado: ${b.associatedMovement}
+- Acción Sugerida: ${b.suggestedAction}
+- Justificación Analista: ${b.justification || 'Sin justificación'}
+- Estado de Revisión: ${b.status}
+`).join('\n')
+
+      const prompt = `
+You are a senior investment strategist. Prepare a professional Market Digest and Executive Briefing Memo in Spanish (Markdown format) consolidating the following individual analyst reviews/briefings for the watchlist: "${watchlistName}".
+
+Your memo should be structured with the following sections:
+1. **Resumen Ejecutivo**: A high-level overview of the market situation for this watchlist.
+2. **Catalizadores Clave e Impacto**: Group the briefings by impact/sentiment and describe the main market drivers.
+3. **Recomendaciones de Portafolio**: Concrete, actionable suggestions on what to do with the target assets, paying close attention to the analyst justifications and suggested actions.
+4. **Resumen de Tareas y Alertas**: Summary of items escalated or pending review.
+
+Here are the briefings to analyze:
+${briefingsText}
+`
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }]
+          })
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error(`Gemini API returned status ${response.status}`)
+      }
+
+      const responseData = await response.json()
+      if (!responseData.candidates || responseData.candidates.length === 0) {
+        throw new Error("No candidates returned from Gemini API")
+      }
+
+      return responseData.candidates[0].content.parts[0].text
+    } catch (error) {
+      console.error("Gemini consolidated report call failed, falling back to simulated:", error)
+      return getSimulatedConsolidatedReport(briefings, watchlistName)
+    }
   }
 }
 
@@ -175,4 +238,36 @@ function getSimulatedAnalysis(headline, summary, assets) {
     associatedMovement,
     suggestedAction
   }
+}
+
+function getSimulatedConsolidatedReport(briefings, watchlistName) {
+  const escalatedCount = briefings.filter(b => b.status === 'Escalada').length
+  const reviewedCount = briefings.filter(b => b.status === 'Revisada').length
+  const pendingCount = briefings.filter(b => b.status === 'Pendiente').length
+  
+  return `# Reporte Consolidado de IA - Lista: ${watchlistName}
+Fecha: ${new Date().toLocaleDateString('es-ES')}
+*Simulación Heurística de Resumen Ejecutivo*
+
+## 1. Resumen Ejecutivo
+Se han consolidado un total de **${briefings.length} reportes analíticos** para la lista de seguimiento **${watchlistName}**. Actualmente tenemos:
+* **${escalatedCount} señales escaladas** para revisión inmediata.
+* **${reviewedCount} señales aprobadas/revisadas**.
+* **${pendingCount} señales en estado pendiente**.
+
+En líneas generales, la cartera de activos vigilados muestra una dispersión de rendimiento influenciada por noticias sectoriales y la coyuntura macro.
+
+## 2. Catalizadores Clave e Impacto
+Los analistas han identificado los siguientes movimientos destacados:
+${briefings.map(b => `* **${b.targetAsset}**: ${b.newsHeadline.substring(0, 80)}... (Proyección: *${b.associatedMovement}*)`).join('\n')}
+
+## 3. Recomendaciones de Portafolio
+* **Acciones Inmediatas:** Evaluar coberturas en activos con proyecciones de corrección o estado Escalado.
+* **Sugerencias del Equipo:** 
+${briefings.map(b => `  - *${b.targetAsset}*: ${b.suggestedAction}`).join('\n')}
+
+## 4. Tareas de Control y Cumplimiento
+* **Alertas Activas:** Se sugiere priorizar la revisión técnica de las alertas asociadas a los briefings escalados.
+* **Control de Justificaciones:** Revisar que las notas ingresadas por los analistas cumplan con la normativa interna.
+`
 }
